@@ -67,13 +67,13 @@ class Token:
         self.misc = misc
 
     def __eq__(self, other):
-        return (isinstance(other, Token)
+        return (self is other
+                or isinstance(other, Token)
                 and all(self.__getattribute__(a) == other.__getattribute__(a)
                         for a in Token.__slots__))
 
     def __repr__(self):
-        return "Token({})".format(
-            ", ".join([str(self.__getattribute__(a)) for a in Token.__slots__]))
+        return ", ".join([repr(self.__getattribute__(a)) for a in Token.__slots__])
 
     def __str__(self):
         return "\t".join([str(self.__getattribute__(a)) for a in Token.__slots__])
@@ -111,13 +111,25 @@ class Word(Token):
         super().__init__(*token_args, **token_kwargs)
 
     def __eq__(self, other):
-        return (isinstance(other, Word)
+        return (self is other
+                or isinstance(other, Word)
                 and self.id == other.id
                 and Token.__eq__(self, other))
 
+    # def __lt__(self, other):
+    #     return self.id < other.id if isinstance(other, Word) else NotImplemented
+
+    # def __le__(self, other):
+    #     return self.id <= other.id if isinstance(other, Word) else NotImplemented
+
+    # def __gt__(self, other):
+    #     return self.id > other.id if isinstance(other, Word) else NotImplemented
+
+    # def __ge__(self, other):
+    #     return self.id >= other.id if isinstance(other, Word) else NotImplemented
+    
     def __repr__(self):
-        return "Word({}, {})".format(
-            self.id, ", ".join([str(self.__getattribute__(a)) for a in Token.__slots__]))
+        return "Word({}, {})".format(self.id, Token.__repr__(self))
 
     def __str__(self):
         return "{}\t{}".format(self.id, Token.__str__(self))
@@ -140,14 +152,14 @@ class MultiWord(Token):
         super().__init__(*token_args, **token_kwargs)
 
     def __eq__(self, other):
-        return (isinstance(other, MultiWord)
+        return (self is other
+                or isinstance(other, MultiWord)
                 and self.lo == other.lo
                 and self.hi == other.hi
                 and Token.__eq__(self, other))
 
     def __repr__(self):
-        return "MultiWord({}, {}, {})".format(
-            self.lo, self.hi, ", ".join([str(self.__getattribute__(a)) for a in Token.__slots__]))
+        return "MultiWord({}, {}, {})".format(self.lo, self.hi, Token.__repr__(self))
 
     def __str__(self):
         return "{}-{}\t{}".format(self.lo, self.hi, Token.__str__(self))
@@ -156,15 +168,20 @@ class Sent:
     """[(Word | MultiWord)] -> Sent: pos_int -> Word"""
     __slots__ = ('words','multi')
 
+    root = Word(0)
+
     def validate(self):
         res = []
+        # check words[1:] and multi-words
         for tok in self:
             faults = tok.validate()
             if faults:
                 res.extend(faults)
                 res.append("---- in " + repr(tok))
-        if not all(i+1 == w.id for i,w in enumerate(self.words)):
-            res.append(Fault('Word', "ids", "from 1 up with step 1"))
+        # more on words
+        if not all(i == w.id for i,w in enumerate(self.words)):
+            res.append(Fault('Word', "ids", "in order"))
+        # more on multi-words
         lo, hi = 0, 0
         for m in self.multi:
             if lo >= m.lo: res.append(Fault('MultiWord', "spans", "sorted"))
@@ -175,7 +192,7 @@ class Sent:
         return res
 
     def __init__(self, tokens):
-        words = []
+        words = [Sent.root]
         multi = []
         for t in tokens:
             if isinstance(t, Word):
@@ -188,7 +205,8 @@ class Sent:
         self.multi = tuple(multi)
 
     def __eq__(self, other):
-        return (isinstance(other, Sent)
+        return (self is other
+                or isinstance(other, Sent)
                 and len(self.words) == len(other.words)
                 and len(self.multi) == len(other.multi)
                 and all(t == t2 for t,t2 in zip(self, other)))
@@ -200,17 +218,14 @@ class Sent:
         return "\n".join([str(t) for t in chain(self, ("",""))])
 
     def __iter__(self):
-        w, m = 0, 0
+        w, m = 1, 0
         while w < len(self.words):
-            if m < len(self.multi) and w+1 == self.multi[m].lo:
+            if m < len(self.multi) and w == self.multi[m].lo:
                 yield self.multi[m]
                 m += 1
             else:
                 yield self.words[w]
                 w += 1
-
-    def __call__(self, i):
-        return self.words[i+1]
 
 def load(file):
     """-> lazy[Sent]"""
@@ -245,7 +260,7 @@ def validate(sents):
 # sents = tuple(load('../ud-treebanks-conll2017/UD_German/de-ud-dev.conllu'))
 # write(sents, 'tmp.conllu')
 # sents2 = tuple(load('tmp.conllu'))
-# print(sents == sents2)
+# assert sents == sents2
 
 # from glob import glob
 # for file in glob("../ud-treebanks-conll2017/*/*.conllu"):
