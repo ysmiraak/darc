@@ -6,7 +6,7 @@ def is_nat_int(x):
     """-> bool"""
     return isinstance(x, int) and 0 <= x
 
-class Fault:
+class Fault(object):
     """like Exception but for collecting and not throwing"""
     __slots__ = ('attr','val','spec')
 

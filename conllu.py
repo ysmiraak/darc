@@ -38,7 +38,7 @@ class AttrVals(AssocTuple):
         # if s != str(avs): print("invalid avs", s, "parsed as", avs)
         return avs
 
-class Token:
+class Token(object):
     """sum type of Word and MultiWord"""
     __slots__ = ('form','lemma','upostag','xpostag','feats','head','deprel','deps','misc')
 
@@ -164,7 +164,7 @@ class MultiWord(Token):
     def __str__(self):
         return "{}-{}\t{}".format(self.lo, self.hi, Token.__str__(self))
 
-class Sent:
+class Sent(object):
     """[(Word | MultiWord)] -> Sent: pos_int -> Word"""
     __slots__ = ('words','multi')
 
@@ -257,12 +257,12 @@ def validate(sents):
         for r in res: print(r)
         if res: print("---------------- in sent", i)
 
-# sents = tuple(load('../ud-treebanks-conll2017/UD_German/de-ud-dev.conllu'))
+# sents = tuple(load('/data/ud-treebanks-conll2017/UD_German/de-ud-dev.conllu'))
 # write(sents, 'tmp.conllu')
 # sents2 = tuple(load('tmp.conllu'))
 # assert sents == sents2
 
 # from glob import glob
-# for file in glob("../ud-treebanks-conll2017/*/*.conllu"):
+# for file in glob("/data/ud-treebanks-conll2017/*/*.conllu"):
 #     print("validating", file, "...")
 #     validate(load(file))

@@ -2,7 +2,7 @@ from conllu import *
 from itertools import repeat, islice
 from bisect import bisect_left, insort_right
 
-class Config:
+class Config(object):
     """active nodes: i,j = config.stack[-2:]"""
     __slots__ = ('words','input','stack','graph')
 
@@ -19,10 +19,12 @@ class Config:
 
     def shift(self, _=None):
         """(σ, [i|β], A) ⇒ ([σ|i], β, A)"""
+        # if input
         self.stack.append(self.input.pop())
 
     def right(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|i], B, A∪{(i, l, j)})"""
+        # if 2 <= len(stack)
         j = self.stack.pop()
         i = self.stack[-1]
         # i -deprel-> j
@@ -33,7 +35,7 @@ class Config:
 
     def left(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|j], B, A∪{(j, l, i)})"""
-        # only if i != root
+        # if 2 <= len(stack) and i != 0
         j = self.stack[-1]
         i = self.stack.pop(-2)
         # i <-deprel- j
@@ -44,10 +46,10 @@ class Config:
 
     def swap(self, _=None):
         """([σ|i,j],β,A) ⇒ ([σ|j],[i|β],A)"""
-        # only if 0  < i < j
+        # if 0 != i and i < j (< 0 i j)
         self.input.append(self.stack.pop(-2))
 
-class Oracle:
+class Oracle(object):
     """three possible modes:
 
     0. proj=True, arc-standard projective
@@ -75,8 +77,8 @@ class Oracle:
         config = Config(gold)
         while not config.is_terminal():
             act,arg = self.predict(config)
-            if act == config.shift and not config.input: break
-            act(arg)
+            if act == Config.shift and not config.input: break
+            act(config,arg)
         self._mpcrt(config.graph,0,0)
         self.mode3 = 2
 
@@ -100,18 +102,18 @@ class Oracle:
 
     def predict(self, config):
         """-> (shift | right | left (| swap)), (deprel | None)"""
-        if 1 == len(config.stack): return config.shift, None
+        if 1 == len(config.stack): return Config.shift, None
         j = config.stack[-1]
         i = config.stack[-2]
         if self.mode3 != 0 and self.order[i] > self.order[j]:
-            if self.mode3 == 1: return config.swap, None
+            if self.mode3 == 1: return Config.swap, None
             if (not config.input or self.mpcrt[j] != self.mpcrt[config.input[-1]]):
-                return config.swap, None
+                return Config.swap, None
         if self.words[i].head == j and self.graph[i] == config.graph[i]:
-            return config.left, self.words[i].deprel
+            return Config.left, self.words[i].deprel
         if i == self.words[j].head and self.graph[j] == config.graph[j]:
-            return config.right, self.words[j].deprel
-        return config.shift, None
+            return Config.right, self.words[j].deprel
+        return Config.shift, None
 
 # s = Sent((Word(1,head=2,deprel='DET',form="A"),
 #           Word(2,head=3,deprel='SBJ',form="hearing",),
@@ -148,11 +150,11 @@ class Oracle:
 #     while not c.is_terminal():
 #         act,arg = o.predict(c)
 #         if verbose: print(act.__name__, arg)
-#         act(arg)
+#         act(c,arg)
 #     assert s == sc
 
 # from glob import glob
-# for file in glob("../ud-treebanks-conll2017/*/*.conllu"):
+# for file in glob("/data/ud-treebanks-conll2017/*/*.conllu"):
 #     print("testing oracle on", file, "...")
 #     for i,s in enumerate(load(file)):
 #         try:
