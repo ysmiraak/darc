@@ -1,15 +1,15 @@
-from conllu import *
 from itertools import repeat, islice
 from bisect import bisect_left, insort_right
 
+
 class Config(object):
     """active nodes: i,j = config.stack[-2:]"""
-    __slots__ = ('words','input','stack','graph')
+    __slots__ = ('words', 'input', 'stack', 'graph')
 
     def __init__(self, sent):
         n = len(sent.words)
         self.words = sent.words
-        self.input = list(range(n-1,0,-1))
+        self.input = list(range(n - 1, 0, -1))
         self.stack = [0]
         self.graph = [[] for _ in range(n)]
 
@@ -49,6 +49,7 @@ class Config(object):
         # if 0 != i and i < j (< 0 i j)
         self.input.append(self.stack.pop(-2))
 
+
 class Oracle(object):
     """three possible modes:
 
@@ -59,36 +60,42 @@ class Oracle(object):
     2. default, lazy swap (Nivre, Kuhlmann, Hall 2009)
 
     """
-    __slots__ = ('words','graph','mode3','order','mpcrt')
+    __slots__ = ('words', 'graph', 'mode3', 'order', 'mpcrt')
 
     def __init__(self, gold, proj=False, lazy=True):
         self.mode3 = 0
         n = len(gold.words)
         self.words = gold.words
         self.graph = [[] for _ in range(n)]
-        for w in self.words[1:]: self.graph[w.head].append(w.id)
-        if proj: return
+        for w in self.words[1:]:
+            self.graph[w.head].append(w.id)
+        if proj:
+            return
         self.mode3 = 1
-        self.order = list(repeat(0,n))
-        self._order(0,0)
-        if not lazy: return
+        self.order = list(repeat(0, n))
+        self._order(0, 0)
+        if not lazy:
+            return
         self.mode3 = 0
-        self.mpcrt = list(repeat(-1,n))
+        self.mpcrt = list(repeat(-1, n))
         config = Config(gold)
         while not config.is_terminal():
-            act,arg = self.predict(config)
-            if act == Config.shift and not config.input: break
-            act(config,arg)
-        self._mpcrt(config.graph,0,0)
+            act, arg = self.predict(config)
+            if act == Config.shift and not config.input:
+                break
+            act(config, arg)
+        self._mpcrt(config.graph, 0, 0)
         self.mode3 = 2
 
     def _order(self, n, o):
         # in-order traversal ordering
-        i = bisect(self.graph[n], n)
-        for c in islice(self.graph[n], i): o = self._order(c,o)
+        i = bisect_left(self.graph[n], n)
+        for c in islice(self.graph[n], i):
+            o = self._order(c, o)
         self.order[n] = o
         o += 1
-        for c in islice(self.graph[n], i, None): o = self._order(c,o)
+        for c in islice(self.graph[n], i, None):
+            o = self._order(c, o)
         return o
 
     def _mpcrt(self, g, n, r):
@@ -96,24 +103,31 @@ class Oracle(object):
         self.mpcrt[n] = r
         i = 0
         for c in self.graph[n]:
-            if -1 != self.mpcrt[c]: continue
-            i = bisect_left(g[n],c,i)
+            if -1 != self.mpcrt[c]:
+                continue
+            i = bisect_left(g[n], c, i)
             self._mpcrt(g, c, r if i < len(g[n]) and c == g[n][i] else c)
 
     def predict(self, config):
         """-> (shift | right | left (| swap)), (deprel | None)"""
-        if 1 == len(config.stack): return Config.shift, None
+        if 1 == len(config.stack):
+            return Config.shift, None
         j = config.stack[-1]
         i = config.stack[-2]
         if self.mode3 != 0 and self.order[i] > self.order[j]:
-            if self.mode3 == 1: return Config.swap, None
-            if (not config.input or self.mpcrt[j] != self.mpcrt[config.input[-1]]):
+            if self.mode3 == 1:
+                return Config.swap, None
+            if (not config.input or
+                    self.mpcrt[j] != self.mpcrt[config.input[-1]]):
                 return Config.swap, None
         if self.words[i].head == j and self.graph[i] == config.graph[i]:
             return Config.left, self.words[i].deprel
         if i == self.words[j].head and self.graph[j] == config.graph[j]:
             return Config.right, self.words[j].deprel
         return Config.shift, None
+
+
+# from conllu import Sent, load
 
 # s = Sent((Word(1,head=2,deprel='DET',form="A"),
 #           Word(2,head=3,deprel='SBJ',form="hearing",),
