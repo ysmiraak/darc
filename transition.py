@@ -17,14 +17,25 @@ class Config(object):
         """-> bool"""
         return 0 == len(self.input) and 1 == len(self.stack)
 
+    def doable(self, act):
+        """-> bool; act: 'shift' | 'right' | 'left' | 'swap'"""
+        if 'shift' == act:
+            return 0 != len(self.input)
+        elif 'right' == act:
+            return 2 <= len(self.stack)
+        elif 'left' == act:
+            return 2 <= len(self.stack) and 0 != self.stack[-2]
+        elif 'swap' == act:
+            return 2 <= len(self.stack) and 0 < self.stack[-2] < self.stack[-1]
+        else:
+            raise TypeError("unknown act: {}".format(act))
+
     def shift(self, _=None):
         """(σ, [i|β], A) ⇒ ([σ|i], β, A)"""
-        # if input
         self.stack.append(self.input.pop())
 
     def right(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|i], B, A∪{(i, l, j)})"""
-        # if 2 <= len(stack)
         j = self.stack.pop()
         i = self.stack[-1]
         # i -deprel-> j
@@ -35,7 +46,6 @@ class Config(object):
 
     def left(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|j], B, A∪{(j, l, i)})"""
-        # if 2 <= len(stack) and i != 0
         j = self.stack[-1]
         i = self.stack.pop(-2)
         # i <-deprel- j
@@ -46,7 +56,6 @@ class Config(object):
 
     def swap(self, _=None):
         """([σ|i,j],β,A) ⇒ ([σ|j],[i|β],A)"""
-        # if 0 != i and i < j (< 0 i j)
         self.input.append(self.stack.pop(-2))
 
 
@@ -67,7 +76,7 @@ class Oracle(object):
         n = len(gold.words)
         self.words = gold.words
         self.graph = [[] for _ in range(n)]
-        for w in self.words[1:]:
+        for w in islice(self.words, 1, None):
             self.graph[w.head].append(w.id)
         if proj:
             return
@@ -81,9 +90,9 @@ class Oracle(object):
         config = Config(gold)
         while not config.is_terminal():
             act, arg = self.predict(config)
-            if act == Config.shift and not config.input:
+            if 'shift' == act and not config.input:
                 break
-            act(config, arg)
+            getattr(config, act)(arg)
         self._mpcrt(config.graph, 0, 0)
         self.mode3 = 2
 
@@ -109,25 +118,31 @@ class Oracle(object):
             self._mpcrt(g, c, r if i < len(g[n]) and c == g[n][i] else c)
 
     def predict(self, config):
-        """-> (shift | right | left (| swap)), (deprel | None)"""
+        """-> act: str, arg: (str | None)
+
+        act: 'shift' | 'right' | 'left' (| 'swap')
+
+        getattr(config, act)(arg)
+
+        """
         if 1 == len(config.stack):
-            return Config.shift, None
+            return 'shift', None
         j = config.stack[-1]
         i = config.stack[-2]
         if self.mode3 != 0 and self.order[i] > self.order[j]:
             if self.mode3 == 1:
-                return Config.swap, None
+                return 'swap', None
             if (not config.input or
                     self.mpcrt[j] != self.mpcrt[config.input[-1]]):
-                return Config.swap, None
+                return 'swap', None
         if self.words[i].head == j and self.graph[i] == config.graph[i]:
-            return Config.left, self.words[i].deprel
+            return 'left', self.words[i].deprel
         if i == self.words[j].head and self.graph[j] == config.graph[j]:
-            return Config.right, self.words[j].deprel
-        return Config.shift, None
+            return 'right', self.words[j].deprel
+        return 'shift', None
 
 
-# from conllu import Sent, load
+# from conllu import Word, Sent, load
 
 # s = Sent((Word(1,head=2,deprel='DET',form="A"),
 #           Word(2,head=3,deprel='SBJ',form="hearing",),
@@ -164,7 +179,7 @@ class Oracle(object):
 #     while not c.is_terminal():
 #         act,arg = o.predict(c)
 #         if verbose: print(act.__name__, arg)
-#         act(c,arg)
+#         getattr(c, act)(arg)
 #     assert s == sc
 
 # from glob import glob

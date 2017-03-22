@@ -1,5 +1,5 @@
-from util import AssocTuple, Fault, is_pos_int, is_nat_int
 from itertools import chain
+from util import AssocTuple, Fault, is_pos_int, is_nat_int
 
 
 class AttrVals(AssocTuple):
@@ -192,7 +192,7 @@ class Sent(object):
     """[(Word | MultiWord)] -> Sent: pos_int -> Word"""
     __slots__ = ('words', 'multi')
 
-    root = Word(0)
+    root = Word(0, form="</s>", upostag='ROOT')
 
     def validate(self):
         res = []
