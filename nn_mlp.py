@@ -12,67 +12,76 @@ from gensim.models.keyedvectors import KeyedVectors
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = ('form_emb', 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran',
-                 'x', 'y')
+    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran', \
+                'form_emb', 'x', 'y'
 
     unknown = Word(None)
 
-    def __init__(self, sents, w2v):
+    def __init__(self, sents, w2v, labeled=True, projective=False):
+        self.labeled = labeled
+        self.projective = projective
         # form_emb form2idx
-        self.form_emb = [np.zeros(50, 'float32')]
-        self.form2idx = {Setup.unknown.form: 0}
+        form_emb = [np.zeros(50, 'float32')]
+        form2idx = {Setup.unknown.form: 0}
+        form_emb_append = form_emb.append
         for form in w2v.index2word:
-            self.form_emb.append(w2v[form])
-            self.form2idx[form] = len(self.form2idx)
-        self.form_emb = np.array(self.form_emb, 'float32')
+            form_emb_append(w2v[form])
+            form2idx[form] = len(form2idx)
+        self.form_emb = np.array(form_emb, 'float32')
+        self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
-        self.upos2idx = {Setup.unknown.upostag: 0}
-        self.feat2idx = {}  # {None: 0}
-        rels = set()
+        upos2idx = {Setup.unknown.upostag: 0, '</s>': 1}  # 1:root
+        feat2idx = {}  # TODO: normalize with {None: 0}
+        rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
         for sent in sents:
-            for word in sent.words:
-                if word.upostag not in self.upos2idx:
-                    self.upos2idx[word.upostag] = len(self.upos2idx)
+            for word in sent.iter_words():
+                if word.upostag not in upos2idx:
+                    upos2idx[word.upostag] = len(upos2idx)
                 for feat in word.feats:
-                    if feat not in self.feat2idx:
-                        self.feat2idx[feat] = len(self.feat2idx)
-                rels.add(word.deprel)
-        rels.discard('_')
-        self.idx2tran = [('swap', None), ('shift', None)]
-        # self.idx2tran.extend(('left, rel) for rel in rels)
-        # self.idx2tran.extend(('right, rel) for rel in rels)
-        for rel in rels:
-            self.idx2tran.append(('left', rel))
-            self.idx2tran.append(('right', rel))
+                    if feat not in feat2idx:
+                        feat2idx[feat] = len(feat2idx)
+                if labeled:
+                    rels.add(word.deprel)
+        self.upos2idx = upos2idx
+        self.feat2idx = feat2idx
+        self.idx2tran = [('shift', None)]
+        self.idx2tran.extend(('right', rel) for rel in rels)
+        self.idx2tran.extend(('left', rel) for rel in rels)
+        if not projective:
+            self.idx2tran.append(('swap', None))
+        # x y
         tran2idx = {}
         for idx, tran in enumerate(self.idx2tran):
             hotv = np.zeros(len(self.idx2tran), 'float32')
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        # x y
-        form = []
-        upos = []
-        feat = []
-        tran = []
+        yx = [], [], [], []
+        tran_append = yx[0].append
+        form_append = yx[1].append
+        upos_append = yx[2].append
+        feat_append = yx[3].append
         for sent in sents:
-            oracle = Oracle(sent)
+            oracle = Oracle(sent, proj=projective)
             config = Config(sent)
             while not config.is_terminal():
-                feature = self.feature(config)
-                act_arg = oracle.predict(config)
-                form.append(feature[0])
-                upos.append(feature[1])
-                feat.append(feature[2])
-                tran.append(tran2idx[act_arg])
-                getattr(config, act_arg[0])(act_arg[1])
+                tran = oracle.predict(config)
+                if 'shift' == tran[0] and not config.input:
+                    # this happends on a non-proj sent with proj setting
+                    break
+                feat = Setup.feature(self, config)
+                form_append(feat[0])
+                upos_append(feat[1])
+                feat_append(feat[2])
+                tran_append(tran2idx[tran])
+                getattr(config, tran[0])(tran[1])
         self.x = {
-            'form': np.concatenate(form),
-            'upos': np.concatenate(upos),
-            'feat': np.concatenate(feat)
+            'form': np.concatenate(yx[1]),
+            'upos': np.concatenate(yx[2]),
+            'feat': np.concatenate(yx[3])
         }
-        self.y = np.array(tran, 'float32')
+        self.y = np.array(yx[0], 'float32')
 
     @staticmethod
     def build(train_conllu, embedding_txt):
@@ -120,16 +129,18 @@ class Setup(object):
         m.get_layer('form_emb').set_weights([self.form_emb])
         return m
 
-    def train(self, model, epochs=1):
-        model.fit(self.x, self.y, epochs=epochs)
+    def train(self, model, *args, **kwargs):
+        """mutates model by calling keras.models.Model.fit"""
+        model.fit(self.x, self.y, *args, **kwargs)
 
     def parse(self, model, sent):
+        """mutates sent"""
         config = Config(sent)
         while not config.is_terminal():
             if 2 > len(config.stack):
                 config.shift()
                 continue
-            prob = model.predict(self.feature(config), 1).flatten()
+            prob = model.predict(Setup.feature(self, config), 1).flatten()
             rank = reversed(prob.argsort())
             good = False
             for r in rank:
@@ -141,7 +152,7 @@ class Setup(object):
             if not good:
                 print("WARNING!!!! FAILED TO PARSE:",
                       " ".join([w.form for w in sent]))
-                break
+                return
 
     def feature(self, config):
         """Config -> [numpy.ndarray]
@@ -157,7 +168,7 @@ class Setup(object):
         #  0: s2
         #  1: s1l1l1  2: s1l1   3: s1l2   4: s1   5: s1r2   6: s1r1   7: s1r1r1
         #  8: s0l1l1  9: s0l1  10: s0l2  11: s0  12: s0r2  13: s0r1  14: s0r1r1
-        # 15: i0     16: i1     17: i2
+        # 15: i0     16: i1    17: i2
         if 1 <= len(config.stack):
             x[11] = config.stack[-1]  # s0
             y = config.graph[x[11]]

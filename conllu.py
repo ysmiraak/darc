@@ -1,78 +1,64 @@
-from itertools import chain
-from util import AssocTuple, Fault, is_pos_int, is_nat_int
+from itertools import chain, islice
 
 
-class AttrVals(AssocTuple):
-    """() | iterable -> AttrVals
+def is_pos_int(x):
+    """-> bool"""
+    return isinstance(x, int) and 0 < x
 
-    assert "_" == str(AttrVals())
 
-    avs = AttrVals((("a","1"),("b","2"),("c","3")))
+def is_nat_int(x):
+    """-> bool"""
+    return isinstance(x, int) and 0 <= x
 
-    s = "a=1|b=2|c=3"
 
-    assert s == str(avs)
+class Fault(object):
+    """like Exception but for collecting and not throwing"""
+    __slots__ = 'attr', 'val', 'spec'
 
-    assert avs == AttrVals.parse(s)
+    def __init__(self, attr, val, spec):
+        self.attr = attr
+        self.val = val
+        self.spec = spec
 
-    """
-    __slots__ = ()
+    def __repr__(self):
+        return "Fault({}, {}, {})".format(self.attr, self.val, self.spec)
 
     def __str__(self):
-        return "|".join(["{}={}".format(k, v) for k, v in self]) or "_"
-
-    @staticmethod
-    def parse(s):
-        """-> AttrVals"""
-        if "_" == s:
-            return AttrVals()
-        avs = []
-        for p in s.split("|"):
-            av = p.split("=")
-            if 1 == len(av):
-                av = p.split(":")
-            if 2 == len(av):
-                avs.append(av)
-            elif 2 < len(av):
-                for a in av[:-1]:
-                    avs.append([a, av[-1]])
-            elif avs:
-                avs[-1][1] += "1" + p
-        avs = AttrVals([(a, v) for a, v in avs], True)
-        # if s != str(avs): print("invalid avs", s, "parsed as", avs)
-        return avs
+        return "{} {} is not {}".format(self.attr, self.val, self.spec)
 
 
 class Token(object):
     """sum type of Word and MultiWord"""
-    __slots__ = ('form', 'lemma', 'upostag', 'xpostag', 'feats', 'head',
-                 'deprel', 'deps', 'misc')
+    __slots__ = 'form', 'lemma', 'upostag', 'xpostag', \
+                'feats', 'head', 'deprel', 'deps', 'misc'
 
-    def validate(self):
+    def validate(self, acc=None):
         """-> [Fault]"""
-        res = []
-        for a in ('form', 'lemma', 'upostag', 'xpostag', 'deprel', 'deps'):
-            v = self.__getattribute__(a)
+        if acc is None:
+            acc = []
+        for a in Token.__slots__:
+            if 'head' == a:
+                continue
+            v = getattr(self, a)
             if not isinstance(v, str):
-                res.append(Fault(a, v, 'str'))
-            if "" == v:
-                res.append(Fault(a, v, "non-empty"))
-        for a in ('feats', 'misc'):
-            v = self.__getattribute__(a)
-            if not isinstance(v, AttrVals):
-                res.append(Fault(a, v, 'AttrVals'))
-        return res
+                acc.append(Fault(a, v, 'str'))
+            if not v:
+                acc.append(Fault(a, v, "non-empty"))
+        if "_" != self.feats \
+           and any(2 != len(f.split("=")) for f in self.feats.split("|")):
+            acc.append(Fault('feats', self.feats, "wellformed"))
+        return acc
 
     def __init__(self,
                  form="_",
                  lemma="_",
                  upostag="_",
                  xpostag="_",
-                 feats=AttrVals(),
+                 feats="_",
                  head="_",
                  deprel="_",
                  deps="_",
-                 misc=AttrVals()):
+                 misc="_"):
         self.form = form
         self.lemma = lemma
         self.upostag = upostag
@@ -84,17 +70,14 @@ class Token(object):
         self.misc = misc
 
     def __eq__(self, other):
-        return (self is other or isinstance(other, Token) and all(
-            self.__getattribute__(a) == other.__getattribute__(a)
-            for a in Token.__slots__))
+        return self is other or isinstance(other, Token) and \
+            all(getattr(self, a) == getattr(other, a) for a in Token.__slots__)
 
     def __repr__(self):
-        return ", ".join(
-            [repr(self.__getattribute__(a)) for a in Token.__slots__])
+        return ", ".join([repr(getattr(self, a)) for a in Token.__slots__])
 
     def __str__(self):
-        return "\t".join(
-            [str(self.__getattribute__(a)) for a in Token.__slots__])
+        return "\t".join([str(getattr(self, a)) for a in Token.__slots__])
 
     @staticmethod
     def parse(s):
@@ -102,51 +85,36 @@ class Token(object):
         args = s.split("\t")
         if len(args) != 10:
             raise TypeError("expected 10-col tsv, got: {}".format(s))
-        args[5] = AttrVals.parse(args[5])
-        args[9] = AttrVals.parse(args[9])
         if "-" in args[0]:
             lo, hi = args[0].split("-")
             args[0] = int(hi)
-            tok = MultiWord(int(lo), *args)
-        else:
-            args[0] = int(args[0])
+            return MultiWord(int(lo), *args)
+        args[0] = int(args[0])
+        if "_" != args[6]:
             args[6] = int(args[6])
-            tok = Word(*args)
-        return tok
+        return Word(*args)
 
 
 class Word(Token):
-    """('id','form','lemma','upostag','xpostag','feats','head','deprel','deps','misc')"""
+    """[id | Token.__slots__]"""
     __slots__ = 'id'
 
-    def validate(self):
-        res = []
+    def validate(self, acc=None):
+        if acc is None:
+            acc = []
         if not is_pos_int(self.id):
-            res.append(Fault('id', self.id, "pos-int"))
+            acc.append(Fault('id', self.id, "pos-int"))
         if not is_nat_int(self.head):
-            res.append(Fault('head', self.head, "nat-int"))
-        res.extend(Token.validate(self))
-        return res
+            acc.append(Fault('head', self.head, "nat-int"))
+        return Token.validate(self, acc)
 
-    def __init__(self, id, *token_args, **token_kwargs):
+    def __init__(self, id, *args, **kwargs):
         self.id = id
-        super().__init__(*token_args, **token_kwargs)
+        super().__init__(*args, **kwargs)
 
     def __eq__(self, other):
-        return (self is other or isinstance(other, Word) and
-                self.id == other.id and Token.__eq__(self, other))
-
-    # def __lt__(self, other):
-    #     return self.id < other.id if isinstance(other, Word) else NotImplemented
-
-    # def __le__(self, other):
-    #     return self.id <= other.id if isinstance(other, Word) else NotImplemented
-
-    # def __gt__(self, other):
-    #     return self.id > other.id if isinstance(other, Word) else NotImplemented
-
-    # def __ge__(self, other):
-    #     return self.id >= other.id if isinstance(other, Word) else NotImplemented
+        return self is other or isinstance(other, Word) and \
+            self.id == other.id and Token.__eq__(self, other)
 
     def __repr__(self):
         return "Word({}, {})".format(self.id, Token.__repr__(self))
@@ -156,33 +124,34 @@ class Word(Token):
 
 
 class MultiWord(Token):
-    """('lo','hi','form','lemma','upostag','xpostag','feats','head','deprel','deps','misc')"""
-    __slots__ = ('lo', 'hi')
+    """[lo, hi | Token.__slots__]"""
+    __slots__ = 'lo', 'hi'
 
-    def validate(self):
-        res = []
-        if not is_pos_int(self.lo) or not is_pos_int(
-                self.hi) or self.lo > self.hi:
-            res.append(
-                Fault('id', "{}-{}".format(self.lo, self.hi), "invalid"))
+    def validate(self, acc=None):
+        if acc is None:
+            acc = []
+        if not is_pos_int(self.lo) \
+           or not is_pos_int(self.hi) \
+           or self.lo > self.hi:
+            acc.append(Fault('id', "{}-{}".format(self.lo, self.hi), "valid"))
         if "_" != self.head:
-            res.append(Fault('head', self.head, "'_'"))
-        res.extend(Token.validate(self))
-        return res
+            acc.append(Fault('head', self.head, "'_'"))
+        return Token.validate(self, acc)
 
-    def __init__(self, lo, hi, *token_args, **token_kwargs):
+    def __init__(self, lo, hi, *args, **kwargs):
         self.lo = lo
         self.hi = hi
-        super().__init__(*token_args, **token_kwargs)
+        super().__init__(*args, **kwargs)
 
     def __eq__(self, other):
-        return (self is other or isinstance(other, MultiWord) and
-                self.lo == other.lo and self.hi == other.hi and
-                Token.__eq__(self, other))
+        return self is other or isinstance(other, MultiWord) and \
+            self.lo == other.lo \
+            and self.hi == other.hi \
+            and Token.__eq__(self, other)
 
     def __repr__(self):
-        return "MultiWord({}, {}, {})".format(self.lo, self.hi,
-                                              Token.__repr__(self))
+        return "MultiWord({}, {}, {})" \
+            .format(self.lo, self.hi, Token.__repr__(self))
 
     def __str__(self):
         return "{}-{}\t{}".format(self.lo, self.hi, Token.__str__(self))
@@ -194,30 +163,38 @@ class Sent(object):
 
     root = Word(0, form="</s>", upostag='ROOT')
 
-    def validate(self):
-        res = []
+    def validate(self, idx):
+        acc = []
+        assert all(isinstance(w, Word) for w in self.words)
+        assert all(isinstance(m, MultiWord) for m in self.multi)
+        if not self.words or Sent.root != self.words[0]:
+            acc.append(Fault('word', '0', 'root'))
         # check words[1:] and multi-words
-        for tok in self:
-            faults = tok.validate()
-            if faults:
-                res.extend(faults)
-                res.append("---- in " + repr(tok))
+        for i, t in enumerate(self):
+            old_len = len(acc)
+            if old_len < len(t.validate(acc)):
+                acc.append("---- in token {}".format(i))
         # more on words
         if not all(i == w.id for i, w in enumerate(self.words)):
-            res.append(Fault('Word', "ids", "in order"))
+            acc.append(Fault('words', 'id', "in order"))
         # more on multi-words
         lo, hi = 0, 0
         for m in self.multi:
             if lo >= m.lo:
-                res.append(Fault('MultiWord', "spans", "sorted"))
+                acc.append(
+                    Fault('MultiWord', "{}-{}".format(m.lo, m.hi), "sorted"))
             if hi >= m.lo:
-                res.append(Fault('MultiWord', "spans", "non-overlapping"))
+                acc.append(
+                    Fault('MultiWord', "{}-{}".format(m.lo, m.hi),
+                          "non-overlapping"))
             if m.hi > len(self.words):
-                res.append(
-                    Fault("MultiWord span", "{}-{}".format(m.lo, m.hi),
+                acc.append(
+                    Fault("MultiWord", "{}-{}".format(m.lo, m.hi),
                           "within bounds"))
             lo, hi = m.lo, m.hi
-        return res
+        if acc:
+            acc.append("---------------- in sent {}".format(idx))
+        return acc
 
     def __init__(self, tokens):
         words = [Sent.root]
@@ -228,22 +205,26 @@ class Sent(object):
             elif isinstance(t, MultiWord):
                 multi.append(t)
             else:
-                raise TypeError("expected Word or MultiWord, got {}: {}".
-                                format(type(t), t))
+                raise TypeError("expected Word or MultiWord, got {}: {}"
+                                .format(type(t), t))
         self.words = tuple(words)
         self.multi = tuple(multi)
 
     def __eq__(self, other):
-        return (self is other or isinstance(other, Sent) and
-                len(self.words) == len(other.words) and
-                len(self.multi) == len(other.multi) and
-                all(t == t2 for t, t2 in zip(self, other)))
+        return self is other or isinstance(other, Sent) and \
+                len(self.words) == len(other.words) \
+                and len(self.multi) == len(other.multi) \
+                and all(t == t2 for t, t2 in zip(self, other))
 
     def __repr__(self):
         return "Sent({})".format(", ".join([repr(t) for t in self]))
 
     def __str__(self):
         return "\n".join([str(t) for t in chain(self, ("", ""))])
+
+    def iter_words(self):
+        """-> iter[Word]; skip root"""
+        islice(self.words, 1, None)
 
     def __iter__(self):
         w, m = 1, 0
@@ -257,7 +238,7 @@ class Sent(object):
 
 
 def load(file):
-    """-> lazy[Sent]"""
+    """-> iter[Sent]"""
     with open(file, encoding='utf-8') as rdr:
         tokens = []
         for line in rdr:
@@ -265,11 +246,11 @@ def load(file):
             if line.startswith("#"):
                 continue
             if line:
-                t = Token.parse(line)
-                tokens.append(t)
+                tokens.append(Token.parse(line))
             else:
-                yield Sent(tokens)
-                tokens = []
+                if tokens:
+                    yield Sent(tokens)
+                    tokens = []
         if tokens:
             yield Sent(tokens)
 
@@ -287,16 +268,13 @@ def validate(sents):
         if not isinstance(s, Sent):
             print("----------------", Fault("sent", i, 'Sent'))
             continue
-        res = s.validate()
-        for r in res:
+        for r in s.validate(i):
             print(r)
-        if res:
-            print("---------------- in sent", i)
 
 
-# sents = tuple(load('/data/ud-treebanks-conll2017/UD_German/de-ud-dev.conllu'))
+# sents = list(load('/data/ud-treebanks-conll2017/UD_German/de-ud-dev.conllu'))
 # write(sents, 'tmp.conllu')
-# sents2 = tuple(load('tmp.conllu'))
+# sents2 = list(load('tmp.conllu'))
 # assert sents == sents2
 
 # from glob import glob
