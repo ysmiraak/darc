@@ -28,7 +28,7 @@ class Setup(object):
         self.form_emb = np.array(form_emb, 'float32')
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
-        upos2idx = {Setup.unknown.upostag: 0, '</s>': 1}  # 1:root
+        upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
         feat2idx = {}  # TODO: normalize with {None: 0}
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
@@ -37,7 +37,7 @@ class Setup(object):
             for word in sent.iter_words():
                 if word.upostag not in upos2idx:
                     upos2idx[word.upostag] = len(upos2idx)
-                for feat in word.feats:
+                for feat in word.feats.split("|"):
                     if feat not in feat2idx:
                         feat2idx[feat] = len(feat2idx)
                 if labeled:
@@ -199,12 +199,12 @@ class Setup(object):
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
         # 18 features (Chen & Manning 2014)
-        words = [w[i] if -1 != i else Setup.unknown for i in x]
+        x = [w[i] if -1 != i else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
         feats = []
-        for word in words:
+        for w in x:
             featv = np.zeros(len(self.feat2idx), 'float32')
-            for feat in word.feats:
+            for feat in w.feats:
                 try:
                     featv[self.feat2idx[feat]] = 1.0
                 except KeyError:
@@ -230,8 +230,8 @@ class Setup(object):
         pass
 
 
-# ud_path = "/data/ud-treebanks-conll2017/UD_Ancient_Greek-PROIEL/"
-# wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
-#            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "grc_proiel-ud-train.conllu",
-#                     wv_path + "grc_proiel.skip.forms.50.vectors")
+ud_path = "/data/ud-treebanks-conll2017/UD_Kazakh/"
+wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
+           "ud-2.0-baselinemodel-train-embeddings/")
+setup = Setup.build(ud_path + "kk-ud-train.conllu",
+                    wv_path + "kk.skip.forms.50.vectors")

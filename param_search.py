@@ -27,7 +27,7 @@ dev = list(load(ud_path + "grc_proiel-ud-dev.conllu"))
 
 # search for hidden units
 optimizer = 'adamax'
-for hidden_units in 50, 100, 150, 200, 250:
+for hidden_units in 50, 100, 150, 200, 250, 300:
     print("try hidden units", hidden_units, "...")
     model = setup.model(hidden_units=hidden_units, optimizer=optimizer)
     for epoch in range(10):
@@ -38,5 +38,3 @@ for hidden_units in 50, 100, 150, 200, 250:
         validate(dev)
         write(dev, "./results/{}_{}units_{}.conllu"
               .format(optimizer, hidden_units, 1 + epoch))
-        print("\n")
-    print("\n\n\n")
