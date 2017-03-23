@@ -18,8 +18,6 @@ class Setup(object):
     unknown = Word(None)
 
     def __init__(self, sents, w2v, labeled=True, projective=False):
-        self.labeled = labeled
-        self.projective = projective
         # form_emb form2idx
         form_emb = [np.zeros(50, 'float32')]
         form2idx = {Setup.unknown.form: 0}
@@ -57,13 +55,11 @@ class Setup(object):
             hotv = np.zeros(len(self.idx2tran), 'float32')
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        yx = [], [], [], []
-        tran_append = yx[0].append
-        form_append = yx[1].append
-        upos_append = yx[2].append
-        feat_append = yx[3].append
+        data = [], [], [], []
+        tran_append, form_append, upos_append, feat_append \
+            = [d.append for d in data]
         for sent in sents:
-            oracle = Oracle(sent, proj=projective)
+            oracle = Oracle(sent, projective=projective, labeled=labeled)
             config = Config(sent)
             while not config.is_terminal():
                 tran = oracle.predict(config)
@@ -71,17 +67,13 @@ class Setup(object):
                     # this happends on a non-proj sent with proj setting
                     break
                 feat = Setup.feature(self, config)
+                tran_append(tran2idx[tran])
                 form_append(feat[0])
                 upos_append(feat[1])
                 feat_append(feat[2])
-                tran_append(tran2idx[tran])
-                getattr(config, tran[0])(tran[1])
-        self.x = {
-            'form': np.concatenate(yx[1]),
-            'upos': np.concatenate(yx[2]),
-            'feat': np.concatenate(yx[3])
-        }
-        self.y = np.array(yx[0], 'float32')
+                getattr(config, tran[0])(tran[1], False)
+        self.y = np.array(data[0], 'float32')
+        self.x = [np.concatenate(d) for d in data[1:]]
 
     @staticmethod
     def build(train_conllu, embedding_txt):
@@ -155,79 +147,81 @@ class Setup(object):
                 return
 
     def feature(self, config):
-        """Config -> [numpy.ndarray]
-
-        form, upos, feat = self[config]
+        """Config -> [numpy.ndarray] :as form, upos, feat
 
         assert form.shape == upos.shape == (18, )
 
         assert feat.shape == (18 * len(self.feat2idx), )
 
         """
+        w, i, s, g = config.words, config.input, config.stack, config.graph
         x = list(repeat(-1, 18))
         #  0: s2
-        #  1: s1l1l1  2: s1l1   3: s1l2   4: s1   5: s1r2   6: s1r1   7: s1r1r1
-        #  8: s0l1l1  9: s0l1  10: s0l2  11: s0  12: s0r2  13: s0r1  14: s0r1r1
+        #  1: s1l0l1  2: s1l0   3: s1l1   4: s1   5: s1r1   6: s1r0   7: s1r0r1
+        #  8: s0l0l1  9: s0l0  10: s0l1  11: s0  12: s0r1  13: s0r0  14: s0r0r1
         # 15: i0     16: i1    17: i2
-        if 1 <= len(config.stack):
-            x[11] = config.stack[-1]  # s0
-            y = config.graph[x[11]]
+        if 1 <= len(s):
+            x[11] = s[-1]  # s0
+            y = g[x[11]]
             if y:
                 if 2 <= len(y):
-                    x[10] = y[1]  # s0l2
-                    x[12] = y[-2]  # s0r2
-                x[9] = y[0]  # s0l1
-                x[13] = y[-1]  # s0r1
-                y = config.graph[x[9]]
+                    x[10] = y[1]  # s0l1
+                    x[12] = y[-2]  # s0r1
+                x[9] = y[0]  # s0l0
+                x[13] = y[-1]  # s0r0
+                y = g[x[9]]
                 if y:
-                    x[8] = y[0]  # s0l1l1
-                y = config.graph[x[13]]
+                    x[8] = y[0]  # s0l0l1
+                y = g[x[13]]
                 if y:
-                    x[14] = y[-1]  # s0r1r1
-            if 2 <= len(config.stack):
-                x[4] = config.stack[-2]  # s1
-                y = config.graph[x[4]]
+                    x[14] = y[-1]  # s0r0r1
+            if 2 <= len(s):
+                x[4] = s[-2]  # s1
+                y = g[x[4]]
                 if y:
                     if 2 <= len(y):
-                        x[3] = y[1]  # s1l2
-                        x[5] = y[-2]  # s1r2
-                    x[2] = y[0]  # s1l1
-                    x[6] = y[-1]  # s1r1
-                    y = config.graph[x[2]]
+                        x[3] = y[1]  # s1l1
+                        x[5] = y[-2]  # s1r1
+                    x[2] = y[0]  # s1l0
+                    x[6] = y[-1]  # s1r0
+                    y = g[x[2]]
                     if y:
-                        x[1] = y[0]  # s1l1l1
-                    y = config.graph[x[6]]
+                        x[1] = y[0]  # s1l0l1
+                    y = g[x[6]]
                     if y:
-                        x[7] = y[-1]  # s1l1r1
-                if 3 <= len(config.stack):
-                    x[0] = config.stack[-3]  # s2
-        if 1 <= len(config.input):
-            x[15] = config.input[-1]  # i0
-            if 2 <= len(config.input):
-                x[16] = config.input[-2]  # i1
-                if 3 <= len(config.input):
-                    x[17] = config.input[-3]  # i2
+                        x[7] = y[-1]  # s1r0r1
+                if 3 <= len(s):
+                    x[0] = s[-3]  # s2
+        if 1 <= len(i):
+            x[15] = i[-1]  # i0
+            if 2 <= len(i):
+                x[16] = i[-2]  # i1
+                if 3 <= len(i):
+                    x[17] = i[-3]  # i2
         # 18 features (Chen & Manning 2014)
-        x = [config.words[x] if -1 != x else Setup.unknown for x in x]
+        words = [w[i] if -1 != i else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
-        feat = []
-        for w in x:
-            ft = np.zeros(len(self.feat2idx), 'float32')
-            for i in [self.feat2idx[f] for f in w.feats if f in self.feat2idx]:
-                ft[i] = 1.0
+        feats = []
+        for word in words:
+            featv = np.zeros(len(self.feat2idx), 'float32')
+            for feat in word.feats:
+                try:
+                    featv[self.feat2idx[feat]] = 1.0
+                except KeyError:
+                    continue
             # TODO: try normalizing ft
             # for i in [self.feat2idx.get(feat, 0) for feat in w.feats]:
             #     ft[i] = 1.0
             # ft[0] = 1.0
-            feat.append(ft)
-        feat = np.concatenate(feat)
+            feats.append(featv)
+        feat = np.concatenate(feats)
         # TODO: add valency feature drel
         form = np.array([self.form2idx.get(w.form, 0) for w in x], 'int32')
         upos = np.array([self.upos2idx.get(w.upostag, 0) for w in x], 'int32')
         form.shape = (1, 18)
         upos.shape = (1, 18)
         feat.shape = (1, feat.size)
-        return [form, upos, feat]
+        return [form, upos, feat]  # model.predict takes list
 
     def save():
         pass

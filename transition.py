@@ -24,8 +24,8 @@ class Config(object):
         if 'shift' == act:
             return 0 != len(self.input)
         elif 'right' == act:
-            return 2 <= len(self.stack) \
-                and (0 != self.stack[-2] or not self.graph[0])
+            return 2 <= len(self.stack)
+        # and (0 != self.stack[-2] or not self.graph[0])
         elif 'left' == act:
             return 2 <= len(self.stack) and 0 != self.stack[-2]
         elif 'swap' == act:
@@ -33,33 +33,33 @@ class Config(object):
         else:
             raise TypeError("unknown act: {}".format(act))
 
-    def shift(self, _=None):
+    def shift(self, _=None, __=True):
         """(σ, [i|β], A) ⇒ ([σ|i], β, A)"""
         self.stack.append(self.input.pop())
 
-    def right(self, label=None):
+    def right(self, label=None, mutate=True):
         """([σ|i, j], B, A) ⇒ ([σ|i], B, A∪{(i, l, j)})"""
         j = self.stack.pop()
         i = self.stack[-1]
-        # i -deprel-> j
-        w = self.words[j]
-        w.head = i
-        if label:
-            w.deprel = label
         insort_right(self.graph[i], j)
+        # i -deprel-> j
+        if mutate:
+            self.words[j].head = i
+            if label:
+                self.words[j].deprel = label
 
-    def left(self, label=None):
+    def left(self, label=None, mutate=True):
         """([σ|i, j], B, A) ⇒ ([σ|j], B, A∪{(j, l, i)})"""
         j = self.stack[-1]
         i = self.stack.pop(-2)
-        # i <-deprel- j
-        w = self.words[i]
-        w.head = j
-        if label:
-            w.deprel = label
         insort_right(self.graph[j], i)
+        # i <-deprel- j
+        if mutate:
+            self.words[i].head = j
+            if label:
+                self.words[j].deprel = label
 
-    def swap(self, _=None):
+    def swap(self, _=None, __=True):
         """([σ|i,j],β,A) ⇒ ([σ|j],[i|β],A)"""
         self.input.append(self.stack.pop(-2))
 
@@ -67,39 +67,44 @@ class Config(object):
 class Oracle(object):
     """three possible modes:
 
-    0. proj=True, arc-standard projective
+    0. projective=True, arc-standard
 
     1. lazy=False, non-projective with swap (Nivre 2009)
 
     2. default, lazy swap (Nivre, Kuhlmann, Hall 2009)
 
-    """
-    __slots__ = 'words', 'graph', 'mode3', 'order', 'mpcrt'
+    plus three unlabeled variants
 
-    def __init__(self, gold, proj=False, lazy=True):
-        self.mode3 = 0
+    """
+    __slots__ = 'mode', 'graph', 'order', 'mpcrt', 'labels'
+
+    def __init__(self, gold, projective=False, lazy=True, labeled=True):
+        self.mode = 0
         n = len(gold.words)
-        self.words = gold.words
         self.graph = [[] for _ in range(n)]
-        for w in islice(self.words, 1, None):
+        for w in islice(gold.words, 1, None):
             self.graph[w.head].append(w.id)
-        if proj:
+        if projective:
             return
-        self.mode3 = 1
+        self.mode = 1
         self.order = list(range(n))
         Oracle._order(self, 0, 0)
         if not lazy:
             return
-        self.mode3 = 0
+        self.mode = 3
         self.mpcrt = list(repeat(-1, n))
         config = Config(gold)
         while not config.is_terminal():
             act, arg = Oracle.predict(self, config)
             if 'shift' == act and not config.input:
                 break
-            getattr(config, act)(arg)
+            getattr(config, act)(arg, False)
         Oracle._mpcrt(self, config.graph, 0, 0)
-        self.mode3 = 2
+        self.mode = 2
+        if labeled:
+            self.labels = [w.deprel for w in gold.words]
+        else:
+            self.mode += 3
 
     def _order(self, n, o):
         # in-order traversal ordering
@@ -123,7 +128,7 @@ class Oracle(object):
             Oracle._mpcrt(self, g, c, r
                           if i < len(g[n]) and c == g[n][i] else c)
 
-    def predict(self, config, labeled=True):
+    def predict(self, config):
         """-> act: str, arg: (str | None)
 
         act: 'shift' | 'right' | 'left' (| 'swap')
@@ -131,20 +136,21 @@ class Oracle(object):
         getattr(config, act)(arg)
 
         """
+        mode = self.mode % 3
         if 1 == len(config.stack):
             return 'shift', None
         j = config.stack[-1]
         i = config.stack[-2]
-        if 0 != self.mode3 and self.order[i] > self.order[j]:
-            if 1 == self.mode3:
+        if 0 != mode and self.order[i] > self.order[j]:
+            if 1 == mode:
                 return 'swap', None
             if not config.input \
                or self.mpcrt[j] != self.mpcrt[config.input[-1]]:
                 return 'swap', None
-        if self.words[i].head == j and self.graph[i] == config.graph[i]:
-            return 'left', self.words[i].deprel if labeled else None
-        if i == self.words[j].head and self.graph[j] == config.graph[j]:
-            return 'right', self.words[j].deprel if labeled else None
+        if i in self.graph[j] and self.graph[i] == config.graph[i]:
+            return 'left', self.labels[i] if 3 > self.mode else None
+        if j in self.graph[i] and self.graph[j] == config.graph[j]:
+            return 'right', self.labels[j] if 3 > self.mode else None
         return 'shift', None
 
 

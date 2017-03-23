@@ -49,25 +49,11 @@ class Token(object):
             acc.append(Fault('feats', self.feats, "wellformed"))
         return acc
 
-    def __init__(self,
-                 form="_",
-                 lemma="_",
-                 upostag="_",
-                 xpostag="_",
-                 feats="_",
-                 head="_",
-                 deprel="_",
-                 deps="_",
-                 misc="_"):
-        self.form = form
-        self.lemma = lemma
-        self.upostag = upostag
-        self.xpostag = xpostag
-        self.feats = feats
-        self.head = head
-        self.deprel = deprel
-        self.deps = deps
-        self.misc = misc
+    def __init__(self, form="_", lemma="_", upostag="_", xpostag="_",
+                 feats="_", head="_", deprel="_", deps="_", misc="_"):
+        self.form, self.lemma, self.upostag, self.xpostag, \
+            self.feats, self.head, self.deprel, self.deps, self.misc \
+            = form, lemma, upostag, xpostag, feats, head, deprel, deps, misc
 
     def __eq__(self, other):
         return self is other or isinstance(other, Token) and \
@@ -224,7 +210,7 @@ class Sent(object):
 
     def iter_words(self):
         """-> iter[Word]; skip root"""
-        islice(self.words, 1, None)
+        return islice(self.words, 1, None)
 
     def __iter__(self):
         w, m = 1, 0
