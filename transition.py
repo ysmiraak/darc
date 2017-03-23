@@ -65,7 +65,7 @@ class Config(object):
 
 
 class Oracle(object):
-    """three possible modes:
+    """six possible modes:
 
     0. projective=True, arc-standard
 
@@ -76,22 +76,22 @@ class Oracle(object):
     plus three unlabeled variants
 
     """
-    __slots__ = 'mode', 'graph', 'order', 'mpcrt', 'labels'
+    __slots__ = 'mode6', 'graph', 'order', 'mpcrt', 'drels'
 
     def __init__(self, gold, projective=False, lazy=True, labeled=True):
-        self.mode = 0
+        self.mode6 = 0
         n = len(gold.words)
         self.graph = [[] for _ in range(n)]
         for w in islice(gold.words, 1, None):
             self.graph[w.head].append(w.id)
         if projective:
             return
-        self.mode = 1
+        self.mode6 = 1
         self.order = list(range(n))
         Oracle._order(self, 0, 0)
         if not lazy:
             return
-        self.mode = 3
+        self.mode6 = 3
         self.mpcrt = list(repeat(-1, n))
         config = Config(gold)
         while not config.is_terminal():
@@ -100,11 +100,11 @@ class Oracle(object):
                 break
             getattr(config, act)(arg, False)
         Oracle._mpcrt(self, config.graph, 0, 0)
-        self.mode = 2
+        self.mode6 = 2
         if labeled:
-            self.labels = [w.deprel for w in gold.words]
+            self.drels = [w.deprel for w in gold.words]
         else:
-            self.mode += 3
+            self.mode6 += 3
 
     def _order(self, n, o):
         # in-order traversal ordering
@@ -136,21 +136,21 @@ class Oracle(object):
         getattr(config, act)(arg)
 
         """
-        mode = self.mode % 3
+        mode3 = self.mode6 % 3
         if 1 == len(config.stack):
             return 'shift', None
         j = config.stack[-1]
         i = config.stack[-2]
-        if 0 != mode and self.order[i] > self.order[j]:
-            if 1 == mode:
+        if 0 != mode3 and self.order[i] > self.order[j]:
+            if 1 == mode3:
                 return 'swap', None
             if not config.input \
                or self.mpcrt[j] != self.mpcrt[config.input[-1]]:
                 return 'swap', None
         if i in self.graph[j] and self.graph[i] == config.graph[i]:
-            return 'left', self.labels[i] if 3 > self.mode else None
+            return 'left', self.drels[i] if 3 > self.mode6 else None
         if j in self.graph[i] and self.graph[j] == config.graph[j]:
-            return 'right', self.labels[j] if 3 > self.mode else None
+            return 'right', self.drels[j] if 3 > self.mode6 else None
         return 'shift', None
 
 
