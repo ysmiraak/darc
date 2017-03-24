@@ -22,17 +22,17 @@ class Setup(object):
         if not sents:
             return
         # form_emb form2idx
-        form_emb = [np.zeros(50, 'float32')]
+        form_emb = [np.zeros(50, np.float32)]
         form2idx = {Setup.unknown.form: 0}
         form_emb_append = form_emb.append
         for form in w2v.index2word:
             form_emb_append(w2v[form])
             form2idx[form] = len(form2idx)
-        self.form_emb = np.array(form_emb, 'float32')
+        self.form_emb = np.array(form_emb, np.float32)
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {}  # TODO: normalize with {None: 0}
+        feat2idx = {}
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -55,7 +55,7 @@ class Setup(object):
         # x y
         tran2idx = {}
         for idx, tran in enumerate(self.idx2tran):
-            hotv = np.zeros(len(self.idx2tran), 'float32')
+            hotv = np.zeros(len(self.idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
         data = [], [], [], []
@@ -75,7 +75,7 @@ class Setup(object):
                 upos_append(feat[1])
                 feat_append(feat[2])
                 getattr(config, tran[0])(tran[1], False)
-        self.y = np.array(data[0], 'float32')
+        self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
 
     @staticmethod
@@ -95,8 +95,8 @@ class Setup(object):
         w2v: gensim.models.keyedvectors.KeyedVectors
 
         """
-        form = Input(name='form', shape=(18, ), dtype='int32')
-        upos = Input(name='upos', shape=(18, ), dtype='int32')
+        form = Input(name='form', shape=(18, ), dtype=np.uint16)
+        upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
         i = [form, upos, feat]
         form = Embedding(
@@ -136,10 +136,9 @@ class Setup(object):
             if 2 > len(config.stack):
                 config.shift()
                 continue
-            prob = model.predict(Setup.feature(self, config), 1).flatten()
-            rank = reversed(prob.argsort())
+            prob = model.predict(Setup.feature(self, config), 1).ravel()
             good = False
-            for r in rank:
+            for r in prob.argsort()[::-1]:
                 act, arg = self.idx2tran[r]
                 if config.doable(act):
                     getattr(config, act)(arg)
@@ -203,29 +202,25 @@ class Setup(object):
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
         # 18 features (Chen & Manning 2014)
-        x = [w[i] if -1 != i else Setup.unknown for i in x]
+        words = [w[i] if -1 != i else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
         feats = []
-        for w in x:
-            featv = np.zeros(len(self.feat2idx), 'float32')
-            for feat in w.feats.split("|"):
+        for word in words:
+            featv = np.zeros(len(self.feat2idx), np.float32)
+            for feat in word.feats.split("|"):
                 try:
                     featv[self.feat2idx[feat]] = 1.0
                 except KeyError:
                     continue
-            # TODO: try normalizing ft
-            # for i in [self.feat2idx.get(feat, 0) for feat in w.feats]:
-            #     ft[i] = 1.0
-            # ft[0] = 1.0
             feats.append(featv)
-        feat = np.concatenate(feats)
         # TODO: add valency feature drel
-        form = np.array([self.form2idx.get(w.form, 0) for w in x], 'int32')
-        upos = np.array([self.upos2idx.get(w.upostag, 0) for w in x], 'int32')
-        form.shape = (1, 18)
-        upos.shape = (1, 18)
-        feat.shape = (1, feat.size)
-        return [form, upos, feat]  # model.predict takes list
+        return [
+            np.array([self.form2idx.get(word.form, 0) for word in words],
+                     np.uint16).reshape(1, 18),
+            np.array([self.upos2idx.get(word.upostag, 0) for word in words],
+                     np.uint8).reshape(1, 18),
+            np.concatenate(feats).reshape(1, -1)
+        ]  # model.predict takes list not tuple
 
     def save(self, file):
         """as npy file"""

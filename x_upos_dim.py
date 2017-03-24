@@ -17,5 +17,5 @@ for upos_emb_dim in 5, 10, 15, 20:
         for sent in dev:
             setup.parse(model, sent)
         validate(dev)
-        write(dev, "./results/{}dim-upos_e{}.conllu"
+        write(dev, "./results/{}d-upos_e{}.conllu"
               .format(upos_emb_dim, epoch))
