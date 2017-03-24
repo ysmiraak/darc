@@ -209,7 +209,7 @@ class Setup(object):
         feats = []
         for w in x:
             featv = np.zeros(len(self.feat2idx), 'float32')
-            for feat in w.feats:
+            for feat in w.feats.split("|"):
                 try:
                     featv[self.feat2idx[feat]] = 1.0
                 except KeyError:
