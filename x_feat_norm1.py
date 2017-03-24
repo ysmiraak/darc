@@ -1,6 +1,6 @@
 from itertools import repeat
 from transition import Config, Oracle
-from conllu import Word, load
+from conllu import Word, load, write, validate
 import numpy as np
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
@@ -32,7 +32,7 @@ class Setup(object):
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {}  # TODO: normalize with {None: 0}
+        feat2idx = {}  # without dummy feat
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -119,10 +119,10 @@ class Setup(object):
         m = Model(i, o, 'darc')
         m.compile(
             optimizer=optimizer,
+            # sgd rmsprop adagrad adadelta adam adamax nadam
             loss='categorical_crossentropy',
             metrics=['accuracy'])
         m.get_layer('form_emb').set_weights([self.form_emb.copy()])
-        # copy necessary ????
         return m
 
     def train(self, model, *args, **kwargs):
@@ -213,10 +213,14 @@ class Setup(object):
                     featv[self.feat2idx[feat]] = 1.0
                 except KeyError:
                     continue
-            # TODO: try normalizing ft
-            # for i in [self.feat2idx.get(feat, 0) for feat in w.feats]:
-            #     ft[i] = 1.0
-            # ft[0] = 1.0
+            # normalize by l1 norm
+            # each featv represents a probability distribution
+            # for morphological content
+            # the zero vector becomes the uniform distribution
+            norm1 = featv.sum()
+            if 0.0 == norm1:
+                featv.fill(1.0 / featv.size)
+            featv /= norm1
             feats.append(featv)
         feat = np.concatenate(feats)
         # TODO: add valency feature drel
@@ -241,8 +245,25 @@ class Setup(object):
         return setup
 
 
-# ud_path = "/data/ud-treebanks-conll2017/UD_Kazakh/"
-# wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
-#            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "kk-ud-train.conllu",
-#                     wv_path + "kk.skip.forms.50.vectors")
+x = "feat_norm1"
+
+
+ud_path = "/data/ud-treebanks-conll2017/"
+wv_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
+          "ud-2.0-baselinemodel-train-embeddings/"
+
+setup = Setup.build(
+    ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
+    wv_path + "grc_proiel.skip.forms.50.vectors")
+
+dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
+
+model = setup.model()
+
+for epoch in range(10):
+    setup.train(model, verbose=2)
+    for sent in dev:
+        setup.parse(model, sent)
+    validate(dev)
+    write(dev, "./results/{}_e{}.conllu"
+          .format(x, epoch))
