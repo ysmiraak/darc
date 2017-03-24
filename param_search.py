@@ -26,28 +26,35 @@ dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
 # # search for optimizer
 # for optimizer in ('sgd', 'rmsprop', 'adagrad', 'adadelta',
 #                   'adam', 'adamax', 'nadam'):
-#     print("try optimizer", optimizer, "...")
 #     model = setup.model(optimizer=optimizer)
 #     for epoch in range(10):
-#         print("train in epoch", epoch + 1, "...")
 #         setup.train(model, verbose=2)
 #         for sent in dev:
 #             setup.parse(model, sent)
 #         validate(dev)
 #         write(dev, "./results/{}_{}.conllu".format(optimizer, epoch + 1))
-#         print("\n")
-#     print("\n\n\n")
 
-# search for hidden units
+# # search for hidden units
 # optimizer = 'adamax'
 # for hidden_units in 50, 100, 150, 200, 250, 300:
-#     print("try hidden units", hidden_units, "...")
 #     model = setup.model(hidden_units=hidden_units, optimizer=optimizer)
 #     for epoch in range(10):
-#         print("train in epoch", 1 + epoch, "...")
 #         setup.train(model, verbose=2)
 #         for sent in dev:
 #             setup.parse(model, sent)
 #         validate(dev)
 #         write(dev, "./results/{}_{}units_{}.conllu"
 #               .format(optimizer, hidden_units, 1 + epoch))
+
+# search for upos_emb_dim
+optimizer = 'adamax'
+hidden_units = 200
+for upos_emb_dim in 5, 10, 15, 20:
+    model = setup.model(hidden_units=hidden_units, optimizer=optimizer)
+    for epoch in range(10):
+        setup.train(model, verbose=2)
+        for sent in dev:
+            setup.parse(model, sent)
+        validate(dev)
+        write(dev, "./results/upos-dim_{}_epoch_{}.conllu"
+              .format(upos_emb_dim, epoch))
