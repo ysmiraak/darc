@@ -58,7 +58,7 @@ class Config(object):
         if mutate:
             self.words[i].head = j
             if label:
-                self.words[j].deprel = label
+                self.words[i].deprel = label
 
     def swap(self, _=None, __=True):
         """([σ|i,j],β,A) ⇒ ([σ|j],[i|β],A)"""

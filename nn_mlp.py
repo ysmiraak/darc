@@ -87,7 +87,7 @@ class Setup(object):
             labeled=labeled,
             projective=projective)
 
-    def model(self, upos_emb_dim=10, hidden_units=200, optimizer='sgd'):
+    def model(self, upos_emb_dim=10, hidden_units=200, optimizer='adamax'):
         """-> keras.models.Model
 
         feature: Feature
