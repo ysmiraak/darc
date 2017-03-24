@@ -16,6 +16,7 @@ class Fault(object):
     __slots__ = 'attr', 'val', 'spec'
 
     def __init__(self, attr, val, spec):
+        super().__init__()
         self.attr = attr
         self.val = val
         self.spec = spec
@@ -51,6 +52,7 @@ class Token(object):
 
     def __init__(self, form="_", lemma="_", upostag="_", xpostag="_",
                  feats="_", head="_", deprel="_", deps="_", misc="_"):
+        super().__init__()
         self.form, self.lemma, self.upostag, self.xpostag, \
             self.feats, self.head, self.deprel, self.deps, self.misc \
             = form, lemma, upostag, xpostag, feats, head, deprel, deps, misc
@@ -95,8 +97,8 @@ class Word(Token):
         return Token.validate(self, acc)
 
     def __init__(self, id, *args, **kwargs):
-        self.id = id
         super().__init__(*args, **kwargs)
+        self.id = id
 
     def __eq__(self, other):
         return self is other or isinstance(other, Word) and \
@@ -125,9 +127,9 @@ class MultiWord(Token):
         return Token.validate(self, acc)
 
     def __init__(self, lo, hi, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.lo = lo
         self.hi = hi
-        super().__init__(*args, **kwargs)
 
     def __eq__(self, other):
         return self is other or isinstance(other, MultiWord) and \
@@ -183,6 +185,7 @@ class Sent(object):
         return acc
 
     def __init__(self, tokens):
+        super().__init__()
         words = [Sent.root]
         multi = []
         for t in tokens:

@@ -7,6 +7,7 @@ class Config(object):
     __slots__ = 'words', 'input', 'stack', 'graph'
 
     def __init__(self, sent):
+        super().__init__()
         n = len(sent.words)
         self.words = sent.words
         self.input = list(range(n - 1, 0, -1))
@@ -79,6 +80,7 @@ class Oracle(object):
     __slots__ = 'mode6', 'graph', 'order', 'mpcrt', 'drels'
 
     def __init__(self, gold, projective=False, lazy=True, labeled=True):
+        super().__init__()
         self.mode6 = 0
         n = len(gold.words)
         self.graph = [[] for _ in range(n)]

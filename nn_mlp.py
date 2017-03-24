@@ -18,6 +18,9 @@ class Setup(object):
     unknown = Word(None)
 
     def __init__(self, sents, w2v, labeled=True, projective=False):
+        super().__init__()
+        if not sents:
+            return
         # form_emb form2idx
         form_emb = [np.zeros(50, 'float32')]
         form2idx = {Setup.unknown.form: 0}
@@ -76,11 +79,13 @@ class Setup(object):
         self.x = [np.concatenate(d) for d in data[1:]]
 
     @staticmethod
-    def build(train_conllu, embedding_txt):
+    def build(train_conllu, embedding_txt, labeled=True, projective=False):
         """-> Setup; build from files"""
         return Setup(
             load(train_conllu),
-            KeyedVectors.load_word2vec_format(embedding_txt))
+            KeyedVectors.load_word2vec_format(embedding_txt),
+            labeled=labeled,
+            projective=projective)
 
     def model(self, upos_emb_dim=10, hidden_units=200, optimizer='sgd'):
         """-> keras.models.Model
@@ -223,15 +228,22 @@ class Setup(object):
         feat.shape = (1, feat.size)
         return [form, upos, feat]  # model.predict takes list
 
-    def save():
-        pass
+    def save(self, file):
+        """as npy file"""
+        np.save(file, {a: getattr(self, a) for a in Setup.__slots__})
 
-    def load():
-        pass
+    @staticmethod
+    def load(file):
+        """-> Setup"""
+        setup = Setup(None, None)
+        data = np.load(file).item()
+        for a in Setup.__slots__:
+            setattr(setup, a, data[a])
+        return setup
 
 
-ud_path = "/data/ud-treebanks-conll2017/UD_Kazakh/"
-wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
-           "ud-2.0-baselinemodel-train-embeddings/")
-setup = Setup.build(ud_path + "kk-ud-train.conllu",
-                    wv_path + "kk.skip.forms.50.vectors")
+# ud_path = "/data/ud-treebanks-conll2017/UD_Kazakh/"
+# wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
+#            "ud-2.0-baselinemodel-train-embeddings/")
+# setup = Setup.build(ud_path + "kk-ud-train.conllu",
+#                     wv_path + "kk.skip.forms.50.vectors")
