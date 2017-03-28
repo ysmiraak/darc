@@ -16,5 +16,5 @@ for hidden_units in 50, 100, 150, 200, 250, 300:
         for sent in dev:
             setup.parse(model, sent)
         validate(dev)
-        write(dev, "./results/{}unit_e{}.conllu"
+        write(dev, "./results/{}units_e{}.conllu"
               .format(hidden_units, epoch))

@@ -244,12 +244,12 @@ setup = Setup.build(
 
 dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
 
-for optimizer in 'adadelta', 'adam', 'adamax':
-    model = setup.model(optimizer=optimizer)
-    for epoch in range(10):
-        setup.train(model, verbose=2)
-        for sent in dev:
-            setup.parse(model, sent)
-        validate(dev)
-        write(dev, "./results/{}_hotupos_e{}.conllu".format(optimizer, epoch))
-    del model
+optimizer = 'adamax'
+model = setup.model(optimizer=optimizer)
+for epoch in range(10):
+    setup.train(model, verbose=2)
+    for sent in dev:
+        setup.parse(model, sent)
+    validate(dev)
+    write(dev, "./results/{}_upos1hot_e{}.conllu".format(optimizer, epoch))
+del model
