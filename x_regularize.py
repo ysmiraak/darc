@@ -8,10 +8,9 @@ from keras.regularizers import l2
 
 upos_emb_dim = 10
 hidden_units = 200
-optimizer = 'adamax'
 
 
-def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1):
+def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1, optimizer='adamax'):
     """-> keras.models.Model
 
     feature: Feature
@@ -76,15 +75,15 @@ def experiment(filename, *args, **kwargs):
         write(dev, filename.format(epoch))
 
 
-experiment("./results/hidden.1_e{}.conllu",
-           hidden_l2=0.1)
-experiment("./results/hidden.01_e{}.conllu",
-           hidden_l2=0.01)
-experiment("./results/hidden.01_output.1_e{}.conllu",
-           hidden_l2=0.01, output_l2=0.1)
-experiment("./results/hidden.01_output.01_e{}.conllu",
-           hidden_l2=0.01, output_l2=0.01)
-experiment("./results/hidden.01_output.01_emb.1_e{}.conllu",
-           hidden_l2=0.01, output_l2=0.01, emb_l2=0.1)
-experiment("./results/hidden.01_output.01_emb.01_e{}.conllu",
-           hidden_l2=0.01, output_l2=0.01, emb_l2=0.01)
+experiment("./results/adam_hidden.001_e{}.conllu",
+           hidden_l2=0.001, optimizer='adam')
+experiment("./results/adamax_hidden.001_e{}.conllu",
+           hidden_l2=0.001, optimizer='adamax')
+experiment("./results/adam_hidden.001_output.001_e{}.conllu",
+           hidden_l2=0.001, output_l2=0.001, optimizer='adam')
+experiment("./results/adamax_hidden.001_output.001_e{}.conllu",
+           hidden_l2=0.001, output_l2=0.001, optimizer='adamax')
+experiment("./results/adam_hidden.001_output.001_emb.001_e{}.conllu",
+           hidden_l2=0.001, output_l2=0.001, emb_l2=0.001, optimizer='adam')
+experiment("./results/adamax_hidden.001_output.001_emb.001_e{}.conllu",
+           hidden_l2=0.001, output_l2=0.001, emb_l2=0.001, optimizer='adamax')

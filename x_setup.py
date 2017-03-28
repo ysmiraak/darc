@@ -15,11 +15,11 @@ setup = Setup.build(
 
 setup.save("./setups/grc_proiel-labeled.npy")
 
-del setup
+# del setup
 
-setup = Setup.build(
-    ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
-    wv_path + "grc_proiel.skip.forms.50.vectors",
-    labeled=False)
+# setup = Setup.build(
+#     ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
+#     wv_path + "grc_proiel.skip.forms.50.vectors",
+#     labeled=False)
 
-setup.save("./setups/grc_proiel-unlabeled.npy")
+# setup.save("./setups/grc_proiel-unlabeled.npy")
