@@ -57,7 +57,7 @@ class Setup(object):
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
         data = [], [], [], [], []
-        tran_append, form_append, upos_append, feat_append, drel_append \
+        tran_append, form_append, upos_append, feat_append, slot_append \
             = [d.append for d in data]
         for sent in sents:
             oracle = Oracle(sent, projective=projective, labeled=labeled)
@@ -72,7 +72,7 @@ class Setup(object):
                 form_append(feat[0])
                 upos_append(feat[1])
                 feat_append(feat[2])
-                drel_append(feat[3])
+                slot_append(feat[3])
                 getattr(config, tran[0])(tran[1], False)
         self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
@@ -97,8 +97,11 @@ class Setup(object):
         form = Input(name='form', shape=(18, ), dtype=np.uint16)
         upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
-        drel = Input(name='drel', shape=(2 * len(self.drel2idx), ))
-        i = [form, upos, feat, drel]
+        # # 1. slot = deprel
+        # slot = Input(name='slot', shape=(2 * len(self.drel2idx), ))
+        # 2. slot = upos
+        slot = Input(name='slot', shape=(2 * len(self.upos2idx), ))
+        i = [form, upos, feat, slot]
         form = Embedding(
             name='form_emb',
             input_dim=len(self.form2idx),
@@ -111,7 +114,7 @@ class Setup(object):
             input_length=18)(upos)
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
-        o = Concatenate(name='inputs')([form, upos, feat, drel])
+        o = Concatenate(name='inputs')([form, upos, feat, slot])
         o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
         o = Dense(
             name='output', units=len(self.idx2tran), activation='softmax')(o)
@@ -212,26 +215,34 @@ class Setup(object):
                 except KeyError:
                     continue
             feats.append(featv)
-        # add valency feature drel
-        nr_drel = len(self.drel2idx)
-        drel = np.zeros(2 * nr_drel, np.float32)
+        # add valency feature slot
+        # # 1. slot = deprel
+        # nr_slot = len(self.drel2idx)
+        # slot = np.zeros(2 * nr_slot, np.float32)
+        # for i in g[x[4]]:
+        #     try:
+        #         slot[self.drel2idx[w[i].deprel]] = 1.0
+        #     except KeyError:
+        #         continue
+        # for i in g[x[11]]:
+        #     try:
+        #         slot[nr_slot + self.drel2idx[w[i].deprel]] = 1.0
+        #     except KeyError:
+        #         continue
+        # 2. slot = upos
+        nr_slot = len(self.upos2idx)
+        slot = np.zeros(2 * nr_slot, np.float32)
         for i in g[x[4]]:
-            try:
-                drel[self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
+            slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
         for i in g[x[11]]:
-            try:
-                drel[nr_drel + self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
+            slot[nr_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      np.uint16).reshape(1, 18),
             np.array([self.upos2idx.get(word.upostag, 0) for word in words],
                      np.uint8).reshape(1, 18),
             np.concatenate(feats).reshape(1, -1),
-            drel.reshape(1, -1)
+            slot.reshape(1, -1)
         ]  # model.predict takes list not tuple
 
     def save(self, file):

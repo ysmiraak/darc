@@ -261,3 +261,9 @@ for children of s0&s1, add multi-hot
 | 78.34 74.58 |      |
 | 78.12 74.18 |      |
 | 76.84 72.88 |      |
+
+* try unit_norm constraint on form_emb
+
+optimizer=adamax hidden_units=200 upos_emb_dim=10
+
+????
