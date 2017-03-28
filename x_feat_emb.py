@@ -127,7 +127,8 @@ class Setup(object):
         feat = Lambda(
             lambda x: K.reshape(
                 K.mean(K.reshape(x, (-1, 18, nr_feat, feat_emb_dim)), -2),
-                (-1, 18 * feat_emb_dim)),
+                (-1, 18 * feat_emb_dim)
+            ),
             output_shape=(18 * feat_emb_dim, ),
             name='feat_flat')(feat)
         o = Concatenate(name='inputs')([form, upos, feat])

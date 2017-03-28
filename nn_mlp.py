@@ -236,8 +236,8 @@ class Setup(object):
         return setup
 
 
-# ud_path = "/data/ud-treebanks-conll2017/UD_Kazakh/"
+# ud_path = "/data/ud-treebanks-conll2017/"
 # wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
 #            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "kk-ud-train.conllu",
+# setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
 #                     wv_path + "kk.skip.forms.50.vectors")

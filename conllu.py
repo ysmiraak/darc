@@ -78,7 +78,8 @@ class Token(object):
             args[0] = int(hi)
             return MultiWord(int(lo), *args)
         args[0] = int(args[0])
-        if "_" != args[6]:
+        args[7] = args[7].split(":")[0]  # acl:relcl -> acl
+        if "_" != args[6]:  # head might be empty for interim results
             args[6] = int(args[6])
         return Word(*args)
 
