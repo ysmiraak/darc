@@ -7,6 +7,10 @@ from keras.models import Model
 from keras.layers import Input, Embedding, Lambda, Flatten, Concatenate, Dense
 from gensim.models.keyedvectors import KeyedVectors
 
+# from keras import regularizers as reg
+# from keras import initializers as init
+from keras import constraints as const
+
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
@@ -30,7 +34,7 @@ class Setup(object):
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {}
+        feat2idx = {Setup.unknown.feats: 0}
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -86,9 +90,19 @@ class Setup(object):
             projective=projective)
 
     def model(self,
+              form_emb_reg=None,
+              form_emb_const=None,
               upos_emb_dim=10,
-              feat_emb_dim=50,
+              upos_emb_reg=None,
+              upos_emb_const=None,
+              feat_emb_dim=30,
+              feat_emb_reg=None,
+              feat_emb_const=None,
               hidden_units=200,
+              hidden_reg=None,
+              hidden_const=None,
+              output_reg=None,
+              output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model
 
@@ -97,27 +111,35 @@ class Setup(object):
         w2v: gensim.models.keyedvectors.KeyedVectors
 
         """
-        nr_form = len(self.form2idx)
-        nr_upos = len(self.upos2idx)
         nr_feat = len(self.feat2idx)
-        nr_tran = len(self.idx2tran)
-        form = Input(name='form', shape=(18, ), dtype='uint16')
-        upos = Input(name='upos', shape=(18, ), dtype='uint8')
-        feat = Input(name='feat', shape=(18 * nr_feat, ), dtype='uint8')
+        form = Input(name='form', shape=(18, ), dtype=np.uint16)
+        upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
+        feat = Input(name='feat', shape=(18 * nr_feat, ), dtype=np.uint8)
         i = [form, upos, feat]
         form = Embedding(
-            input_dim=nr_form, input_length=18, output_dim=50,
+            input_dim=len(self.form2idx),
+            input_length=18,
+            output_dim=50,
+            embeddings_initializer='zeros',
+            embeddings_regularizer=form_emb_reg,
+            embeddings_constraint=form_emb_const,
             name='form_emb')(form)
         upos = Embedding(
-            input_dim=nr_upos,
+            input_dim=len(self.upos2idx),
             input_length=18,
             output_dim=upos_emb_dim,
+            embeddings_initializer='uniform',
+            embeddings_regularizer=upos_emb_reg,
+            embeddings_constraint=upos_emb_const,
             name='upos_emb')(upos)
         feat = Embedding(
             input_dim=nr_feat,
             input_length=18 * nr_feat,
             output_dim=feat_emb_dim,
             mask_zero=True,
+            embeddings_initializer='uniform',
+            embeddings_regularizer=feat_emb_reg,
+            embeddings_constraint=feat_emb_const,
             name='feat_emb')(feat)
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
@@ -129,10 +151,21 @@ class Setup(object):
             output_shape=(18 * feat_emb_dim, ),
             name='feat_flat')(feat)
         o = Concatenate(name='inputs')([form, upos, feat])
-        o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
-        o = Dense(name='output', units=nr_tran, activation='softmax')(o)
-        # TODO: add regularization
-        m = Model(i, o, 'darc')
+        o = Dense(
+            units=hidden_units,
+            activation='tanh',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=hidden_reg,
+            kernel_constraint=hidden_const,
+            name='hidden')(o)
+        o = Dense(
+            units=len(self.idx2tran),
+            activation='softmax',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=output_reg,
+            kernel_constraint=output_const,
+            name='output')(o)
+        m = Model(i, o, name='darc')
         m.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
@@ -224,13 +257,9 @@ class Setup(object):
         for word in words:
             featv = np.zeros(len(self.feat2idx), np.uint8)
             for feat in word.feats.split("|"):
-                try:
-                    idx = self.feat2idx[feat]
-                    featv[idx] = idx
-                except KeyError:
-                    continue
+                idx = self.feat2idx.get(feat, 0)
+                featv[idx] = idx
             feats.append(featv)
-        # TODO: add valency feature drel
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      'uint16').reshape(1, 18),
@@ -263,12 +292,15 @@ setup = Setup.build(
     ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
     wv_path + "grc_proiel.skip.forms.50.vectors")
 
-for feat_emb_dim in 25, 50, 75:
-    model = setup.model(feat_emb_dim=feat_emb_dim)
-    for epoch in range(10):
-        setup.train(model, verbose=2)
-        for sent in dev:
-            setup.parse(model, sent)
-        validate(dev)
-        write(dev, "./results/{}d-feat_e{}.conllu".format(feat_emb_dim, epoch))
-    del model
+model = setup.model(
+    form_emb_const=const.max_norm(1.0),
+    upos_emb_const=const.max_norm(1.0),
+    feat_emb_const=const.max_norm(1.0))
+
+for epoch in range(10):
+    setup.train(model, verbose=2)
+    for sent in dev:
+        setup.parse(model, sent)
+    validate(dev)
+    write(dev, "./results/maxnorm_form_upos_feat30d_e{}.conllu"
+          .format(epoch))

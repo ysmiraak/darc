@@ -96,7 +96,9 @@ class Setup(object):
               upos_emb_const=None,
               hidden_units=200,
               hidden_reg=None,
+              hidden_const=None,
               output_reg=None,
+              output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model
 
@@ -133,12 +135,14 @@ class Setup(object):
             activation='tanh',
             kernel_initializer='glorot_uniform',
             kernel_regularizer=hidden_reg,
+            kernel_constraint=hidden_const,
             name='hidden')(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
             kernel_initializer='glorot_uniform',
-            kernel_regularizer=None,
+            kernel_regularizer=output_reg,
+            kernel_constraint=output_const,
             name='output')(o)
         m = Model(i, o, name='darc')
         m.compile(
@@ -234,7 +238,6 @@ class Setup(object):
             for feat in word.feats.split("|"):
                 featv[self.feat2idx.get(feat, 0)] = 1.0
             feats.append(featv)
-        # TODO: add valency feature drel
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      np.uint16).reshape(1, 18),
