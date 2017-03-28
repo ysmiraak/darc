@@ -12,7 +12,7 @@ from gensim.models.keyedvectors import KeyedVectors
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'drel2idx', 'idx2tran', \
+    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
     unknown = Word(None)
@@ -47,7 +47,6 @@ class Setup(object):
                     rels.add(word.deprel)
         self.upos2idx = upos2idx
         self.feat2idx = feat2idx
-        self.drel2idx = {drel: idx for idx, drel in enumerate(rels)}
         self.idx2tran = [('shift', None)]
         self.idx2tran.extend(('right', rel) for rel in rels)
         self.idx2tran.extend(('left', rel) for rel in rels)
@@ -59,8 +58,8 @@ class Setup(object):
             hotv = np.zeros(len(self.idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        data = [], [], [], [], []
-        tran_append, form_append, upos_append, feat_append, drel_append \
+        data = [], [], [], []
+        tran_append, form_append, upos_append, feat_append \
             = [d.append for d in data]
         for sent in sents:
             oracle = Oracle(sent, projective=projective, labeled=labeled)
@@ -75,7 +74,6 @@ class Setup(object):
                 form_append(feat[0])
                 upos_append(feat[1])
                 feat_append(feat[2])
-                drel_append(feat[3])
                 getattr(config, tran[0])(tran[1], False)
         self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
@@ -98,23 +96,16 @@ class Setup(object):
 
         """
         form = Input(name='form', shape=(18, ), dtype=np.uint16)
-        upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
+        upos = Input(name='upos', shape=(18 * len(self.upos2idx), ))
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
-        drel = Input(name='drel', shape=(2 * len(self.drel2idx), ))
-        i = [form, upos, feat, drel]
+        i = [form, upos, feat]
         form = Embedding(
             name='form_emb',
             input_dim=len(self.form2idx),
             output_dim=50,
             input_length=18)(form)
-        upos = Embedding(
-            name='upos_emb',
-            input_dim=len(self.upos2idx),
-            output_dim=upos_emb_dim,
-            input_length=18)(upos)
         form = Flatten(name='form_flat')(form)
-        upos = Flatten(name='upos_flat')(upos)
-        o = Concatenate(name='inputs')([form, upos, feat, drel])
+        o = Concatenate(name='inputs')([form, upos, feat])
         o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
         o = Dense(
             name='output', units=len(self.idx2tran), activation='softmax')(o)
@@ -207,6 +198,11 @@ class Setup(object):
         # 18 features (Chen & Manning 2014)
         words = [w[i] if -1 != i else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
+        uposs = []
+        for word in words:
+            uposv = np.zeros(len(self.upos2idx), np.float32)
+            uposv[self.upos2idx.get(word.upostag, 0)] = 1.0
+            uposs.append(uposv)
         feats = []
         for word in words:
             featv = np.zeros(len(self.feat2idx), np.float32)
@@ -216,26 +212,12 @@ class Setup(object):
                 except KeyError:
                     continue
             feats.append(featv)
-        # add valency feature drel
-        nr_drel = len(self.drel2idx)
-        drel = np.zeros(2 * nr_drel, np.float32)
-        for i in g[x[4]]:
-            try:
-                drel[self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
-        for i in g[x[11]]:
-            try:
-                drel[nr_drel + self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
+        # TODO: add valency feature drel
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      np.uint16).reshape(1, 18),
-            np.array([self.upos2idx.get(word.upostag, 0) for word in words],
-                     np.uint8).reshape(1, 18),
-            np.concatenate(feats).reshape(1, -1),
-            drel.reshape(1, -1)
+            np.concatenate(uposs).reshape(1, -1),
+            np.concatenate(feats).reshape(1, -1)
         ]  # model.predict takes list not tuple
 
     def save(self, file):
@@ -262,26 +244,12 @@ setup = Setup.build(
 
 dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
 
-model = setup.model(optimizer='adamax')
-for epoch in range(10):
-    setup.train(model, verbose=2)
-    for sent in dev:
-        setup.parse(model, sent)
-    validate(dev)
-    write(dev, "./results/adamax_valency_e{}.conllu".format(epoch))
-del model
-model = setup.model(optimizer='adam')
-for epoch in range(10):
-    setup.train(model, verbose=2)
-    for sent in dev:
-        setup.parse(model, sent)
-    validate(dev)
-    write(dev, "./results/adam_valency_e{}.conllu".format(epoch))
-del model
-model = setup.model(optimizer='adadelta')
-for epoch in range(10):
-    setup.train(model, verbose=2)
-    for sent in dev:
-        setup.parse(model, sent)
-    validate(dev)
-    write(dev, "./results/adadelta_valency_e{}.conllu".format(epoch))
+for optimizer in 'adadelta', 'adam', 'adamax':
+    model = setup.model(optimizer=optimizer)
+    for epoch in range(10):
+        setup.train(model, verbose=2)
+        for sent in dev:
+            setup.parse(model, sent)
+        validate(dev)
+        write(dev, "./results/{}_hotupos_e{}.conllu".format(optimizer, epoch))
+    del model
