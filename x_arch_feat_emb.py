@@ -7,9 +7,6 @@ from keras.models import Model
 from keras.layers import Input, Embedding, Lambda, Flatten, Concatenate, Dense
 from gensim.models.keyedvectors import KeyedVectors
 
-# import h5py
-# import json
-
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""

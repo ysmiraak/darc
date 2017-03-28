@@ -6,9 +6,6 @@ from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
 from gensim.models.keyedvectors import KeyedVectors
 
-# import h5py
-# import json
-
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
@@ -118,7 +115,6 @@ class Setup(object):
         o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
         o = Dense(
             name='output', units=len(self.idx2tran), activation='softmax')(o)
-        # TODO: add regularization
         m = Model(i, o, 'darc')
         m.compile(
             optimizer=optimizer,
@@ -270,4 +266,3 @@ for epoch in range(10):
         setup.parse(model, sent)
     validate(dev)
     write(dev, "./results/{}_valency_e{}.conllu".format(optimizer, epoch))
-del model

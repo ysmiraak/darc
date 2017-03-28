@@ -6,9 +6,6 @@ from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
 from gensim.models.keyedvectors import KeyedVectors
 
-# import h5py
-# import json
-
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
@@ -109,7 +106,6 @@ class Setup(object):
         o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
         o = Dense(
             name='output', units=len(self.idx2tran), activation='softmax')(o)
-        # TODO: add regularization
         m = Model(i, o, 'darc')
         m.compile(
             optimizer=optimizer,
@@ -212,7 +208,6 @@ class Setup(object):
                 except KeyError:
                     continue
             feats.append(featv)
-        # TODO: add valency feature drel
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      np.uint16).reshape(1, 18),

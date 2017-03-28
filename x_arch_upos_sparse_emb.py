@@ -34,7 +34,6 @@ def new_model(setup,
     o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
     o = Dense(
         name='output', units=len(setup.idx2tran), activation='softmax')(o)
-    # TODO: add regularization
     m = Model(i, o, 'darc')
     m.compile(
         optimizer=optimizer,

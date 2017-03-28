@@ -2,12 +2,12 @@ from itertools import repeat
 from transition import Config, Oracle
 from conllu import Word, load
 import numpy as np
+from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
-from gensim.models.keyedvectors import KeyedVectors
-
-# import h5py
-# import json
+# from keras import regularizers as reg
+# from keras import initializers as init
+# from keras import constraints as const
 
 
 class Setup(object):
@@ -100,23 +100,37 @@ class Setup(object):
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
         i = [form, upos, feat]
         form = Embedding(
-            name='form_emb',
             input_dim=len(self.form2idx),
+            input_length=18,
             output_dim=50,
-            input_length=18)(form)
+            embeddings_initializer='zeros',
+            embeddings_regularizer=None,
+            embeddings_constraint=None,
+            name='form_emb')(form)
         upos = Embedding(
-            name='upos_emb',
             input_dim=len(self.upos2idx),
+            input_length=18,
             output_dim=upos_emb_dim,
-            input_length=18)(upos)
+            embeddings_initializer='uniform',
+            embeddings_regularizer=None,
+            embeddings_constraint=None,
+            name='upos_emb')(upos)
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
         o = Concatenate(name='inputs')([form, upos, feat])
-        o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
         o = Dense(
-            name='output', units=len(self.idx2tran), activation='softmax')(o)
-        # TODO: add regularization
-        m = Model(i, o, 'darc')
+            units=hidden_units,
+            activation='tanh',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=None,
+            name='hidden')(o)
+        o = Dense(
+            units=len(self.idx2tran),
+            activation='softmax',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=None,
+            name='output')(o)
+        m = Model(i, o, name='darc')
         m.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
