@@ -8,12 +8,14 @@ setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
 axis = 0
 
-model = setup.model(form_emb_const=const.unit_norm(axis))
+model = setup.model(
+    form_emb_const=const.unit_norm(axis),
+    upos_emb_const=const.unit_norm(axis))
 
 for epoch in range(10):
     setup.train(model, verbose=2)
     for sent in dev:
         setup.parse(model, sent)
     validate(dev)
-    write(dev, "./results/form_norm_axis{}_e{}.conllu"
-          .format(axis, epoch))
+    write(dev, "./results/unit_norm_e{}.conllu"
+          .format(epoch))

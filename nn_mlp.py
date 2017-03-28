@@ -33,7 +33,7 @@ class Setup(object):
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {}
+        feat2idx = {Setup.unknown.feats: 0}
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -232,10 +232,7 @@ class Setup(object):
         for word in words:
             featv = np.zeros(len(self.feat2idx), np.float32)
             for feat in word.feats.split("|"):
-                try:
-                    featv[self.feat2idx[feat]] = 1.0
-                except KeyError:
-                    continue
+                featv[self.feat2idx.get(feat, 0)] = 1.0
             feats.append(featv)
         # TODO: add valency feature drel
         return [

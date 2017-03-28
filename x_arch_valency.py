@@ -259,6 +259,8 @@ class Setup(object):
         return setup
 
 
+slot = "upos"
+
 ud_path = "/data/ud-treebanks-conll2017/"
 wv_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
           "ud-2.0-baselinemodel-train-embeddings/"
@@ -278,4 +280,4 @@ for epoch in range(10):
     for sent in dev:
         setup.parse(model, sent)
     validate(dev)
-    write(dev, "./results/{}_valency_e{}.conllu".format(optimizer, epoch))
+    write(dev, "./results/{}_valency_e{}.conllu".format(slot, epoch))
