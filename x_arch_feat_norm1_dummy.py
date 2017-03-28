@@ -246,16 +246,15 @@ class Setup(object):
 
 x = "feat_norm1_dummy"
 
-
 ud_path = "/data/ud-treebanks-conll2017/"
 wv_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
           "ud-2.0-baselinemodel-train-embeddings/"
 
+dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
+
 setup = Setup.build(
     ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
     wv_path + "grc_proiel.skip.forms.50.vectors")
-
-dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
 
 model = setup.model()
 

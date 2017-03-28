@@ -1,9 +1,9 @@
 from nn_mlp import Setup
 from conllu import load, write, validate
 
-setup = Setup.load("./setups/grc_proiel-labeled.npy")
-
 dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+
+setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
 # optimizers = 'sgd', 'rmsprop', 'adagrad', 'adadelta', 'adam', 'adamax', 'nadam'
 

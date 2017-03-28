@@ -1,11 +1,9 @@
 from nn_mlp import Setup
 from conllu import load, write, validate
 
-ud_path = "/data/ud-treebanks-conll2017/"
+dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
 
 setup = Setup.load("./setups/grc_proiel-labeled.npy")
-
-dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
 
 optimizer = 'adamax'
 

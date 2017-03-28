@@ -5,6 +5,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
+
 # from keras import regularizers as reg
 # from keras import initializers as init
 # from keras import constraints as const
@@ -87,7 +88,16 @@ class Setup(object):
             labeled=labeled,
             projective=projective)
 
-    def model(self, upos_emb_dim=10, hidden_units=200, optimizer='adamax'):
+    def model(self,
+              form_emb_reg=None,
+              form_emb_const=None,
+              upos_emb_dim=10,
+              upos_emb_reg=None,
+              upos_emb_const=None,
+              hidden_units=200,
+              hidden_reg=None,
+              output_reg=None,
+              optimizer='adamax'):
         """-> keras.models.Model
 
         feature: Feature
@@ -104,16 +114,16 @@ class Setup(object):
             input_length=18,
             output_dim=50,
             embeddings_initializer='zeros',
-            embeddings_regularizer=None,
-            embeddings_constraint=None,
+            embeddings_regularizer=form_emb_reg,
+            embeddings_constraint=form_emb_const,
             name='form_emb')(form)
         upos = Embedding(
             input_dim=len(self.upos2idx),
             input_length=18,
             output_dim=upos_emb_dim,
             embeddings_initializer='uniform',
-            embeddings_regularizer=None,
-            embeddings_constraint=None,
+            embeddings_regularizer=upos_emb_reg,
+            embeddings_constraint=upos_emb_const,
             name='upos_emb')(upos)
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
@@ -122,7 +132,7 @@ class Setup(object):
             units=hidden_units,
             activation='tanh',
             kernel_initializer='glorot_uniform',
-            kernel_regularizer=None,
+            kernel_regularizer=hidden_reg,
             name='hidden')(o)
         o = Dense(
             units=len(self.idx2tran),

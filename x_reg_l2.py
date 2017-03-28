@@ -58,9 +58,9 @@ def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1, optimizer='adam'):
     return m
 
 
-setup = Setup.load("./setups/grc_proiel-labeled.npy")
-
 dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+
+setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
 
 def experiment(filename, *args, **kwargs):

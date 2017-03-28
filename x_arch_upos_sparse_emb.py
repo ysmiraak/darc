@@ -44,17 +44,19 @@ def new_model(setup,
     return m
 
 
-setup = Setup.load("./setups/grc_proiel-labeled.npy")
-
 dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+
+setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
 upos_emb_dim = 30
 upos_emb_l1 = 0.01
+
 model = new_model(
     setup,
     upos_emb_dim=upos_emb_dim,
     upos_emb_l1=upos_emb_l1,
     optimizer='adamax')
+
 for epoch in range(10):
     setup.train(model, verbose=2)
     for sent in dev:
