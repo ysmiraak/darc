@@ -10,7 +10,7 @@ upos_emb_dim = 10
 hidden_units = 200
 
 
-def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1, optimizer='adamax'):
+def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1, optimizer='adam'):
     """-> keras.models.Model
 
     feature: Feature
@@ -58,11 +58,9 @@ def new_model(setup, hidden_l2=-1, output_l2=-1, emb_l2=-1, optimizer='adamax'):
     return m
 
 
-ud_path = "/data/ud-treebanks-conll2017/"
-
 setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
-dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
+dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
 
 
 def experiment(filename, *args, **kwargs):
