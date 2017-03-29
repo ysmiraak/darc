@@ -32,7 +32,7 @@ setup = Setup.build(
     projective=projective
 )
 
-setup.save("./setups/{}-{}-labeled.npy"
+setup.save("./setups/{}_{}_{}.npy"
            .format(lang,
                    '+proj' if projective else '-proj',
                    '+label' if labeled else '-label'))
