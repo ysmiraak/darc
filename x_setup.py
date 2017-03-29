@@ -11,6 +11,7 @@ labeled = True
 dev_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"
 train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
 
+
 # # chinese
 # lang = "zh"
 # projective = True
