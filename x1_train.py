@@ -1,9 +1,11 @@
 from nn_mlp import Setup
 from conllu import load, write, validate
 
-dev = list(load("./setups/zh-ud-dev.conllu"))
+dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
 
-setup = Setup.load("./setups/zh_-proj_+label.npy")
+# dev = list(load("./setups/zh-ud-dev.conllu"))
+# setup = Setup.load("./setups/zh_-proj_+label.npy")
 
 model = setup.model(
     # form_emb_reg=None,
@@ -26,5 +28,5 @@ for epoch in range(10):
     for sent in dev:
         setup.parse(model, sent)
     validate(dev)
-    write(dev, "./results/zh_nonproj_e{}.conllu"
+    write(dev, "./results/e{}.conllu"
           .format(epoch))

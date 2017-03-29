@@ -1,5 +1,9 @@
 * architecture
 
+- propose structure for feat embedding
+
+- try without dummy feat
+
 - consider beam search
 
 - consider structured perceptron
