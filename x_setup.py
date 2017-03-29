@@ -6,11 +6,15 @@ ud_path = "/data/ud-treebanks-conll2017/"
 
 # ancient greek proiel
 lang = "grc_proiel"
+projective = False
+labeled = True
 dev_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"
 train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
 
 # # chinese
 # lang = "zh"
+# projective = True
+# labeled = True
 # dev_path = ud_path + "UD_Chinese/zh-ud-dev.conllu"
 # train_path = ud_path + "UD_Chinese/zh-ud-train.conllu"
 
@@ -24,19 +28,11 @@ embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
 setup = Setup.build(
     train_path,
     embedding_path,
-    labeled=True,
-    projective=True
+    labeled=labeled,
+    projective=projective
 )
 
-setup.save("./setups/{}-labeled.npy".format(lang))
-
-del setup
-
-setup = Setup.build(
-    train_path,
-    embedding_path,
-    labeled=False,
-    projective=True
-)
-
-setup.save("./setups/{}-unlabeled.npy".format(lang))
+setup.save("./setups/{}-{}-labeled.npy"
+           .format(lang,
+                   '+proj' if projective else '-proj',
+                   '+label' if labeled else '-label'))
