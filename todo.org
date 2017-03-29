@@ -1,0 +1,78 @@
+* architecture
+
+- try unlabeled parsing
+
+- consider beam search
+
+- consider structured perceptron
+
+- consider lemma instead of form
+
+- consider integrated word+pos+morph embedding
+
+* parameter
+
+- try relu activation (and change initializers)
+
++ try optimizers
+
++ try hidden units
+
+* regularization
+
+- try dropout
+
++ try large upos embedding (dim >= 16) with l1-reg
+
++ try l2-reg for all, normalized by |w|
+
+- try glorot_normal initializer along with l2-reg
+
+* questions
+
+- tensorflow gpu
+
+- regularization constant: adapt to |w| ?
+
+- multiple attachment to root in one sent ?
+
+* troubles
+** single root
+
+the evaluation script doesn't allow more than one nodes to be attached to root in
+one sentence. split the sentence when this happens.
+
+** empty words
+
+3 treebanks have empty words (UD_English UD_Finnish UD_Russian-SynTagRus). my
+parser can't deal with that. solution: make our own treebanks for them, with
+changed indexings, turning empty words into normal words.
+
+** retrain udpipe models
+
+for tokenizing, sent-splitting, lemmatizing, postagging, and morphtagging
+
+the release udpipe models in `udpipe-ud-2.0-conll17-170315` and embeddings in
+`udpipe-ud-2.0-conll17-170315-supplementary-data` split the train sets further
+into train and tune sets.
+
+on top of that, we have 8 small treebanks that only have train sets
+(Slovenian-SST Latin French-ParTUT Galician-TreeGal Irish Ukrainian Uyghur
+Kazakh), and they are split into three parts. it's impossible to learn any model
+from that. for example, the tune set for kazakh has only one sentence. see
+`/data/ud-2.0-conll17-baselinemodel-split`.
+
+i hope we could try the approach in `/data/ud-2.0-conll17-crossfold-morphology`,
+using 10-fold jack-knifing to train our udpipe models. this approach does perform
+better, if you look at the evaluation results. but they didn't release the models
+with this approach.
+
+** retrain embeddings
+
+same as above, train our embeddings on the original train sets, and not the
+split ones.
+
+and maybe pretrain postag embeddings.
+
+** check if udpipe doesn't handle multiwords
+** surprise languages

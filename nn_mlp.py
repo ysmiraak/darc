@@ -90,10 +90,10 @@ class Setup(object):
 
     def model(self,
               form_emb_reg=None,
-              form_emb_const=None,
+              form_emb_const='unit_norm',
               upos_emb_dim=10,
               upos_emb_reg=None,
-              upos_emb_const=None,
+              upos_emb_const='unit_norm',
               hidden_units=200,
               hidden_reg=None,
               hidden_const=None,
@@ -265,3 +265,6 @@ class Setup(object):
 #            "ud-2.0-baselinemodel-train-embeddings/")
 # setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
 #                     wv_path + "kk.skip.forms.50.vectors")
+
+# from keras.utils import plot_model
+# plot_model(model, to_file='model.png')

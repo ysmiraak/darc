@@ -9,7 +9,7 @@ from gensim.models.keyedvectors import KeyedVectors
 
 # from keras import regularizers as reg
 # from keras import initializers as init
-from keras import constraints as const
+# from keras import constraints as const
 
 
 class Setup(object):
@@ -293,14 +293,14 @@ setup = Setup.build(
     wv_path + "grc_proiel.skip.forms.50.vectors")
 
 model = setup.model(
-    form_emb_const=const.max_norm(1.0),
-    upos_emb_const=const.max_norm(1.0),
-    feat_emb_const=const.max_norm(1.0))
+    form_emb_const='unit_norm',
+    upos_emb_const='unit_norm',
+    feat_emb_const='unit_norm')
 
 for epoch in range(10):
     setup.train(model, verbose=2)
     for sent in dev:
         setup.parse(model, sent)
     validate(dev)
-    write(dev, "./results/maxnorm_form_upos_feat30d_e{}.conllu"
+    write(dev, "./results/const_form_upos_feat30d_e{}.conllu"
           .format(epoch))
