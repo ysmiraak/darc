@@ -14,13 +14,13 @@
 
 - try relu activation (and change initializers)
 
-+ try optimizers
++ optimize optimizers
 
-+ try hidden units
++ optimize hidden units
 
 * regularization
 
-- try dropout
++ try dropout
 
 + try large upos embedding (dim >= 16) with l1-reg
 

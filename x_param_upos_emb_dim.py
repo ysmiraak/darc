@@ -5,9 +5,8 @@ dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
 
 setup = Setup.load("./setups/grc_proiel-labeled.npy")
 
-for upos_emb_dim in 5, 15, 17, 20:
+for upos_emb_dim in 5, 15, 20:
     model = setup.model(
-        setup,
         # form_emb_reg=None,
         # form_emb_const='unit_norm',
         upos_emb_dim=upos_emb_dim,

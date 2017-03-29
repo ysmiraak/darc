@@ -4,7 +4,7 @@ from conllu import Word, load
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 
 # from keras import regularizers as reg
 # from keras import initializers as init
@@ -94,9 +94,11 @@ class Setup(object):
               upos_emb_dim=10,
               upos_emb_reg=None,
               upos_emb_const='unit_norm',
+              inputs_dropout=None,
               hidden_units=200,
               hidden_reg=None,
               hidden_const=None,
+              hidden_dropout=None,
               output_reg=None,
               output_const=None,
               optimizer='adamax'):
@@ -130,6 +132,8 @@ class Setup(object):
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
         o = Concatenate(name='inputs')([form, upos, feat])
+        if inputs_dropout:
+            o = Dropout(name='inputs_dropout', rate=inputs_dropout)(o)
         o = Dense(
             units=hidden_units,
             activation='tanh',
@@ -137,6 +141,8 @@ class Setup(object):
             kernel_regularizer=hidden_reg,
             kernel_constraint=hidden_const,
             name='hidden')(o)
+        if hidden_dropout:
+            o = Dropout(name='hidden_dropout', rate=hidden_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',

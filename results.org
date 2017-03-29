@@ -1,4 +1,4 @@
-experiment results on grc_proiel
+experiment results on grc-proiel
 
 * first model
 
@@ -8,7 +8,7 @@ experiment results on grc_proiel
 3 hidden
 4 output
 
-hidden_units=200 upos_emb_dim=10
+hidden-units=200 upos-emb-dim=10
 
 ** old setup (unnormalized deprel)
 
@@ -44,9 +44,9 @@ hidden_units=200 upos_emb_dim=10
 
 adamax
 
-* optimize hidden_units
+* optimize hidden-units
 
-optimizer=adamax upos_emb_dim=10
+optimizer=adamax upos-emb-dim=10
 
 ** old setup (unnormalized deprel)
 
@@ -73,7 +73,7 @@ since feat is a multi-hot vector, normalize by l2 make it unit, normalize by l1
 make it a probability distribution; maybe always fill dim 0 as the dummy, to deal
 with null vectors
 
-optimizer=adamax hidden_units=200 upos_emb_dim=10
+optimizer=adamax hidden-units=200 upos-emb-dim=10
 
 ** old setup (unnormalized deprel)
 
@@ -94,15 +94,15 @@ optimizer=adamax hidden_units=200 upos_emb_dim=10
 
 bad
 
-* try feat_emb
+* try feat-emb
 
 take the average of feat present in feats
 
-optimizer=adamax hidden_units=200 upos_emb_dim=10
+optimizer=adamax hidden-units=200 upos-emb-dim=10
 
 ** old setup (unnormalized deprel)
 
-feat_emb_dim=
+feat-emb-dim=
 
 | 25          | 50          | 75          |
 |-------------+-------------+-------------|
@@ -123,9 +123,9 @@ bad
 
 * try l2 regularization
 
-hidden_units=200 upos_emb_dim=10
+hidden-units=200 upos-emb-dim=10
 
-hidden_l2=.001
+hidden-l2=.001
 
 | adam        | adamax      |
 |-------------+-------------|
@@ -140,7 +140,7 @@ hidden_l2=.001
 | 72.42 67.95 | 75.96 71.40 |
 | 73.00 68.40 | 74.68 70.40 |
 
-hidden_l2=.001 output_l2=.001
+hidden-l2=.001 output-l2=.001
 
 | adam        | adamax      |
 |-------------+-------------|
@@ -156,7 +156,7 @@ hidden_l2=.001 output_l2=.001
 | 70.39 65.63 | 74.10 69.33 |
 
 
-hidden_l2=.001 output_l2=.001 emb_l2=.001
+hidden-l2=.001 output-l2=.001 emb-l2=.001
 
 | adam        | adamax      |
 |-------------+-------------|
@@ -175,11 +175,11 @@ hidden_l2=.001 output_l2=.001 emb_l2=.001
 
 bad
 
-* optimize upos_emb_dim
+* optimize upos-emb-dim
 
-|upos| = 15 + 2
+|upos| = 14 + 2
 
-optimizer=adamax hidden_units=200
+optimizer=adamax hidden-units=200
 
 ** old setup (unnormalized deprel)
 
@@ -217,7 +217,7 @@ optimizer=adamax hidden_units=200
 
 * try 1hot upos
 
-hidden_units=200
+hidden-units=200
 
 | adadelta    | adamax      |
 |-------------+-------------|
@@ -236,9 +236,9 @@ hidden_units=200
 
 bad
 
-* try l1 reg on upos_emb
+* try l1 reg on upos-emb
 
-optimizer=adamax hidden_units=200 upos_emb_dim=30
+optimizer=adamax hidden-units=200 upos-emb-dim=30
 
 l1=
 
@@ -261,7 +261,7 @@ bad
 
 * try valency feature
 
-optimizer=adamax hidden_units=200 upos_emb_dim=10
+optimizer=adamax hidden-units=200 upos-emb-dim=10
 
 for children of s0&s1, add multi-hot
 
@@ -284,9 +284,9 @@ could be helpful for labeled parsing
 
 * try norm constraint
 
-optimizer=adamax hidden_units=200 upos_emb_dim=10
+optimizer=adamax hidden-units=200 upos-emb-dim=10
 
-on form_emb
+on form-emb
 
 | unit axis=1 | unit axis=0 | max 1 0     | max 2 0     |
 |-------------+-------------+-------------+-------------|
@@ -303,7 +303,7 @@ on form_emb
 
 axis=0
 
-on form_emb & upos_emb
+on form-emb & upos-emb
 
 | unit        | max 1       |
 |-------------+-------------|
@@ -318,7 +318,7 @@ on form_emb & upos_emb
 | 79.00 74.99 | 78.95 75.07 |
 | 79.73 75.93 | 78.12 74.42 |
 
-unit_norm on form_emb & upos_emb
+unit-norm on form-emb & upos-emb
 on hidden
 
 | unit        | max 1       | max 2       |
@@ -334,30 +334,38 @@ on hidden
 | 70.88 65.98 | 71.04 66.20 | 74.87 70.70 |
 | 69.89 65.07 | 70.75 66.16 | 74.47 70.35 |
 
-unit_norm on form_emb & upos_emb & feat_emb(dim=30)
+unit-norm on form-emb & upos-emb & feat-emb(dim=30)
 
 ** conclusion
 
-unit_norm on form_emb & upos_emb
+unit-norm on form-emb & upos-emb
 
 * try dropout
 
+on inputs
 
+????
 
 ** conclusion
 
 ????
 
-* optimize upos_emb_dim again with unit_norm
+* optimize upos-emb-dim with unit-norm
 
-|upos| = 15 + 2
+|upos| = 14 + 2
 
-optimizer=adamax hidden_units=200
-unit_norm on form_emb & upos_emb
+optimizer=adamax hidden-units=200
+unit-norm on form-emb & upos-emb
 
-| 5 | 10 | 15 | 20 |
-|---+----+----+----|
-|   |    |    |    |
+????
+
+** conclusion
+
+????
+
+* optimize optimizer with unit-norm
+
+????
 
 ** conclusion
 
