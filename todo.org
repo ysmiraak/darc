@@ -1,7 +1,5 @@
 * architecture
 
-- try unlabeled parsing
-
 - consider beam search
 
 - consider structured perceptron
