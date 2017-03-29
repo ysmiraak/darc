@@ -86,23 +86,22 @@ class Oracle(object):
         self.graph = [[] for _ in range(n)]
         for w in islice(gold.words, 1, None):
             self.graph[w.head].append(w.id)
-        if projective:
-            return
-        self.mode6 = 1
-        self.order = list(range(n))
-        Oracle._order(self, 0, 0)
-        if not lazy:
-            return
-        self.mode6 = 3
-        self.mpcrt = list(repeat(-1, n))
-        config = Config(gold)
-        while not config.is_terminal():
-            act, arg = Oracle.predict(self, config)
-            if 'shift' == act and not config.input:
-                break
-            getattr(config, act)(arg, False)
-        Oracle._mpcrt(self, config.graph, 0, 0)
-        self.mode6 = 2
+        if not projective:
+            self.mode6 = 1
+            self.order = list(range(n))
+            Oracle._order(self, 0, 0)
+            if not lazy:
+                return
+            self.mode6 = 3
+            self.mpcrt = list(repeat(-1, n))
+            config = Config(gold)
+            while not config.is_terminal():
+                act, arg = Oracle.predict(self, config)
+                if 'shift' == act and not config.input:
+                    break
+                getattr(config, act)(arg, False)
+            Oracle._mpcrt(self, config.graph, 0, 0)
+            self.mode6 = 2
         if labeled:
             self.drels = [w.deprel for w in gold.words]
         else:
