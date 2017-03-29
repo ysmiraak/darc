@@ -37,6 +37,7 @@
 - multiple attachment to root in one sent ?
 
 * troubles
+
 ** single root
 
 the evaluation script doesn't allow more than one nodes to be attached to root in
@@ -75,4 +76,5 @@ split ones.
 and maybe pretrain postag embeddings.
 
 ** check if udpipe doesn't handle multiwords
+
 ** surprise languages
