@@ -1,11 +1,9 @@
 from nn_mlp import Setup
 from conllu import load, write, validate
 
-dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+dev = list(load("./setups/zh-ud-dev.conllu"))
 
-setup = Setup.load("./setups/grc_proiel-unlabeled.npy")
-
-hidden_units = 200
+setup = Setup.load("./setups/zh_-proj_+label.npy")
 
 model = setup.model(
     # form_emb_reg=None,
@@ -14,7 +12,7 @@ model = setup.model(
     # upos_emb_reg=None,
     # upos_emb_const='unit_norm',
     # inputs_dropout=0.0,
-    hidden_units=hidden_units,
+    # hidden_units=200,
     # hidden_reg=None,
     # hidden_const=None,
     # hidden_dropout=0.0,
@@ -28,5 +26,5 @@ for epoch in range(10):
     for sent in dev:
         setup.parse(model, sent)
     validate(dev)
-    write(dev, "./results/{}units_e{}.conllu"
-          .format(hidden_units, epoch))
+    write(dev, "./results/zh_nonproj_e{}.conllu"
+          .format(epoch))
