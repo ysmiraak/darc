@@ -94,11 +94,11 @@ class Setup(object):
               upos_emb_dim=10,
               upos_emb_reg=None,
               upos_emb_const='unit_norm',
-              inputs_dropout=None,
+              inputs_dropout=0.0,
               hidden_units=200,
               hidden_reg=None,
               hidden_const=None,
-              hidden_dropout=None,
+              hidden_dropout=0.0,
               output_reg=None,
               output_const=None,
               optimizer='adamax'):
