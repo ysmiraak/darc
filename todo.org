@@ -1,8 +1,8 @@
 * architecture
 
-- propose structure for feat embedding
+- try valency feature again
 
-- try without dummy feat
+- propose structure for feat embedding
 
 - consider beam search
 
@@ -23,8 +23,6 @@
 * regularization
 
 + try dropout
-
-+ try large upos embedding (dim >= 16) with l1-reg
 
 + try l2-reg for all, normalized by |w|
 

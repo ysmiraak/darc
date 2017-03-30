@@ -424,7 +424,7 @@ hidden-units=
 
 ** conclusion
 
-doing unlabeled parsing 
+doing unlabeled parsing is not easier
 
 * try dropout
 
