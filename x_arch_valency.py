@@ -29,7 +29,7 @@ class Setup(object):
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {}
+        feat2idx = {Setup.unknown.feats: 0}
         rels = set() if labeled else [None]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -86,7 +86,20 @@ class Setup(object):
             labeled=labeled,
             projective=projective)
 
-    def model(self, upos_emb_dim=10, hidden_units=200, optimizer='adamax'):
+    def model(self,
+              form_emb_reg=None,
+              form_emb_const='unit_norm',
+              upos_emb_dim=10,
+              upos_emb_reg=None,
+              upos_emb_const='unit_norm',
+              inputs_dropout=0.0,
+              hidden_units=200,
+              hidden_reg=None,
+              hidden_const=None,
+              hidden_dropout=0.0,
+              output_reg=None,
+              output_const=None,
+              optimizer='adamax'):
         """-> keras.models.Model
 
         feature: Feature
@@ -97,28 +110,49 @@ class Setup(object):
         form = Input(name='form', shape=(18, ), dtype=np.uint16)
         upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
-        # # 1. slot = deprel
-        # slot = Input(name='slot', shape=(2 * len(self.drel2idx), ))
-        # 2. slot = upos
-        slot = Input(name='slot', shape=(2 * len(self.upos2idx), ))
+        # 1. slot = deprel
+        slot = Input(name='slot', shape=(2 * len(self.drel2idx), ))
+        # # 2. slot = upos
+        # slot = Input(name='slot', shape=(2 * len(self.upos2idx), ))
         i = [form, upos, feat, slot]
         form = Embedding(
-            name='form_emb',
             input_dim=len(self.form2idx),
+            input_length=18,
             output_dim=50,
-            input_length=18)(form)
+            embeddings_initializer='zeros',
+            embeddings_regularizer=form_emb_reg,
+            embeddings_constraint=form_emb_const,
+            name='form_emb')(form)
         upos = Embedding(
-            name='upos_emb',
             input_dim=len(self.upos2idx),
+            input_length=18,
             output_dim=upos_emb_dim,
-            input_length=18)(upos)
+            embeddings_initializer='uniform',
+            embeddings_regularizer=upos_emb_reg,
+            embeddings_constraint=upos_emb_const,
+            name='upos_emb')(upos)
         form = Flatten(name='form_flat')(form)
         upos = Flatten(name='upos_flat')(upos)
         o = Concatenate(name='inputs')([form, upos, feat, slot])
-        o = Dense(name='hidden', units=hidden_units, activation='tanh')(o)
+        if inputs_dropout:
+            o = Dropout(name='inputs_dropout', rate=inputs_dropout)(o)
         o = Dense(
-            name='output', units=len(self.idx2tran), activation='softmax')(o)
-        m = Model(i, o, 'darc')
+            units=hidden_units,
+            activation='tanh',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=hidden_reg,
+            kernel_constraint=hidden_const,
+            name='hidden')(o)
+        if hidden_dropout:
+            o = Dropout(name='hidden_dropout', rate=hidden_dropout)(o)
+        o = Dense(
+            units=len(self.idx2tran),
+            activation='softmax',
+            kernel_initializer='glorot_uniform',
+            kernel_regularizer=output_reg,
+            kernel_constraint=output_const,
+            name='output')(o)
+        m = Model(i, o, name='darc')
         m.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
@@ -210,32 +244,29 @@ class Setup(object):
         for word in words:
             featv = np.zeros(len(self.feat2idx), np.float32)
             for feat in word.feats.split("|"):
-                try:
-                    featv[self.feat2idx[feat]] = 1.0
-                except KeyError:
-                    continue
+                featv[self.feat2idx.get(feat, 0)] = 1.0
             feats.append(featv)
         # add valency feature slot
-        # # 1. slot = deprel
-        # nr_slot = len(self.drel2idx)
-        # slot = np.zeros(2 * nr_slot, np.float32)
-        # for i in g[x[4]]:
-        #     try:
-        #         slot[self.drel2idx[w[i].deprel]] = 1.0
-        #     except KeyError:
-        #         continue
-        # for i in g[x[11]]:
-        #     try:
-        #         slot[nr_slot + self.drel2idx[w[i].deprel]] = 1.0
-        #     except KeyError:
-        #         continue
-        # 2. slot = upos
-        nr_slot = len(self.upos2idx)
+        # 1. slot = deprel
+        nr_slot = len(self.drel2idx)
         slot = np.zeros(2 * nr_slot, np.float32)
         for i in g[x[4]]:
-            slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
+            try:
+                slot[self.drel2idx[w[i].deprel]] = 1.0
+            except KeyError:
+                continue
         for i in g[x[11]]:
-            slot[nr_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
+            try:
+                slot[nr_slot + self.drel2idx[w[i].deprel]] = 1.0
+            except KeyError:
+                continue
+        # # 2. slot = upos
+        # nr_slot = len(self.upos2idx)
+        # slot = np.zeros(2 * nr_slot, np.float32)
+        # for i in g[x[4]]:
+        #     slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
+        # for i in g[x[11]]:
+        #     slot[nr_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
         return [
             np.array([self.form2idx.get(word.form, 0) for word in words],
                      np.uint16).reshape(1, 18),
@@ -259,7 +290,7 @@ class Setup(object):
         return setup
 
 
-slot = "upos"
+slot = "deprel"
 
 ud_path = "/data/ud-treebanks-conll2017/"
 wv_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
@@ -271,9 +302,7 @@ setup = Setup.build(
     ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
     wv_path + "grc_proiel.skip.forms.50.vectors")
 
-optimizer = 'adamax'
-
-model = setup.model(optimizer=optimizer)
+model = setup.model()
 
 for epoch in range(10):
     setup.train(model, verbose=2)
