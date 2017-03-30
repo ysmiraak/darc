@@ -1,7 +1,5 @@
 * architecture
 
-- try valency feature again
-
 - propose structure for feat embedding
 
 - consider beam search

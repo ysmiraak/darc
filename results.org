@@ -426,6 +426,23 @@ hidden-units=
 
 doing unlabeled parsing is not easier
 
+* try valency feature again
+
+72.49 68.41
+76.76 72.80
+76.63 72.72
+77.58 73.67
+78.46 74.89
+78.42 74.43
+78.84 75.13
+79.66 75.75
+78.89 75.22
+78.93 74.98
+
+** conclusion
+
+not helpful
+
 * try dropout
 
 on inputs
