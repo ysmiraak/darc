@@ -18,7 +18,7 @@ class Setup(object):
 
     unknown = Word(None)
 
-    def __init__(self, sents, w2v, labeled=True, projective=False):
+    def __init__(self, sents, w2v, projective=False, labeled=True):
         super().__init__()
         if not sents:
             return
