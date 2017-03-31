@@ -2,32 +2,35 @@ from itertools import repeat
 from transition import Config, Oracle
 from conllu import Word, load, validate, write
 import numpy as np
-from keras.models import Model
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dense
 from gensim.models.keyedvectors import KeyedVectors
+from keras.models import Model
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
+
+# from keras import regularizers as reg
+# from keras import initializers as init
+# from keras import constraints as const
 
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'drel2idx', 'idx2tran', \
+    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'slot2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
-    unknown = Word(None)
+    unknown = Word(None, form="", upostag="_", feats="_")
 
     def __init__(self, sents, w2v, labeled=True, projective=False):
         super().__init__()
         if not sents:
             return
         # form_emb form2idx
-        form_emb = [np.zeros(50, np.float32)]
+        form_emb = np.zeros((1 + len(w2v.index2word), 50), np.float32)
         form2idx = {Setup.unknown.form: 0}
-        form_emb_append = form_emb.append
-        for form in w2v.index2word:
-            form_emb_append(w2v[form])
-            form2idx[form] = len(form2idx)
-        self.form_emb = np.array(form_emb, np.float32)
+        for idx, form in enumerate(w2v.index2word, 1):
+            form_emb[idx] = w2v.word_vec(form)
+            form2idx[form] = idx
+        self.form_emb = form_emb
         self.form2idx = form2idx
-        # upos2idx feat2idx idx2tran
+        # upos2idx feat2idx slot2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
         feat2idx = {Setup.unknown.feats: 0}
         rels = set() if labeled else [None]
@@ -44,7 +47,7 @@ class Setup(object):
                     rels.add(word.deprel)
         self.upos2idx = upos2idx
         self.feat2idx = feat2idx
-        self.drel2idx = {drel: idx for idx, drel in enumerate(rels)}
+        self.slot2idx = {rel: idx for idx, rel in enumerate(rels)}
         self.idx2tran = [('shift', None)]
         self.idx2tran.extend(('right', rel) for rel in rels)
         self.idx2tran.extend(('left', rel) for rel in rels)
@@ -111,7 +114,7 @@ class Setup(object):
         upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
         feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
         # 1. slot = deprel
-        slot = Input(name='slot', shape=(2 * len(self.drel2idx), ))
+        slot = Input(name='slot', shape=(2 * len(self.slot2idx), ))
         # # 2. slot = upos
         # slot = Input(name='slot', shape=(2 * len(self.upos2idx), ))
         i = [form, upos, feat, slot]
@@ -194,7 +197,7 @@ class Setup(object):
 
         """
         w, i, s, g = config.words, config.input, config.stack, config.graph
-        x = list(repeat(-1, 18))
+        x = list(repeat(None, 18))
         #  0: s2
         #  1: s1l0l1  2: s1l0   3: s1l1   4: s1   5: s1r1   6: s1r0   7: s1r0r1
         #  8: s0l0l1  9: s0l0  10: s0l1  11: s0  12: s0r1  13: s0r0  14: s0r0r1
@@ -240,40 +243,44 @@ class Setup(object):
         # 18 features (Chen & Manning 2014)
         words = [w[i] if -1 != i else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
-        feats = []
-        for word in words:
-            featv = np.zeros(len(self.feat2idx), np.float32)
+        num_feat = len(self.feat2idx)
+        feat_vec = np.zeros(18 * num_feat, np.float32)
+        feat2idx = self.feat2idx.get
+        for idx, word in enumerate(words):
             for feat in word.feats.split("|"):
-                featv[self.feat2idx.get(feat, 0)] = 1.0
-            feats.append(featv)
+                feat_vec[num_feat * idx + feat2idx(feat, 0)] = 1.0
         # add valency feature slot
         # 1. slot = deprel
-        nr_slot = len(self.drel2idx)
-        slot = np.zeros(2 * nr_slot, np.float32)
-        for i in g[x[4]]:
-            try:
-                slot[self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
-        for i in g[x[11]]:
-            try:
-                slot[nr_slot + self.drel2idx[w[i].deprel]] = 1.0
-            except KeyError:
-                continue
+        num_slot = len(self.slot2idx)
+        slot = np.zeros(2 * num_slot, np.float32)
+        if x[4] is not None:
+            for i in g[x[4]]:
+                try:
+                    slot[self.slot2idx[w[i].deprel]] = 1.0
+                except KeyError:
+                    pass
+        if x[11] is not None:
+            for i in g[x[11]]:
+                try:
+                    slot[num_slot + self.slot2idx[w[i].deprel]] = 1.0
+                except KeyError:
+                    pass
         # # 2. slot = upos
-        # nr_slot = len(self.upos2idx)
-        # slot = np.zeros(2 * nr_slot, np.float32)
-        # for i in g[x[4]]:
-        #     slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
-        # for i in g[x[11]]:
-        #     slot[nr_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
+        # num_slot = len(self.upos2idx)
+        # slot = np.zeros(2 * num_slot, np.float32)
+        # if x[4] is not None:
+        #     for i in g[x[4]]:
+        #         slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
+        # if x[11] is not None:
+        #     for i in g[x[11]]:
+        #         slot[num_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
         return [
-            np.array([self.form2idx.get(word.form, 0) for word in words],
-                     np.uint16).reshape(1, 18),
-            np.array([self.upos2idx.get(word.upostag, 0) for word in words],
-                     np.uint8).reshape(1, 18),
-            np.concatenate(feats).reshape(1, -1),
-            slot.reshape(1, -1)
+            np.fromiter((self.form2idx.get(word.form, 0) for word in words),
+                        np.uint16).reshape(1, 18),
+            np.fromiter((self.upos2idx.get(word.upostag, 0) for word in words),
+                        np.uint8).reshape(1, 18),
+            feat_vec.reshape(1, -1),
+            slot.reshape(1, -1),
         ]  # model.predict takes list not tuple
 
     def save(self, file):

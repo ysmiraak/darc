@@ -16,20 +16,19 @@ class Setup(object):
     __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
-    unknown = Word(None)
+    unknown = Word(None, form="", upostag="_", feats="_")
 
     def __init__(self, sents, w2v, projective=False, labeled=True):
         super().__init__()
         if not sents:
             return
         # form_emb form2idx
-        form_emb = [np.zeros(50, np.float32)]
+        form_emb = np.zeros((1 + len(w2v.index2word), 50), np.float32)
         form2idx = {Setup.unknown.form: 0}
-        form_emb_append = form_emb.append
-        for form in w2v.index2word:
-            form_emb_append(w2v[form])
-            form2idx[form] = len(form2idx)
-        self.form_emb = np.array(form_emb, np.float32)
+        for idx, form in enumerate(w2v.index2word, 1):
+            form_emb[idx] = w2v.word_vec(form)
+            form2idx[form] = idx
+        self.form_emb = form_emb
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
@@ -192,7 +191,7 @@ class Setup(object):
 
         """
         w, i, s, g = config.words, config.input, config.stack, config.graph
-        x = list(repeat(-1, 18))
+        x = list(repeat(None, 18))
         #  0: s2
         #  1: s1l0l1  2: s1l0   3: s1l1   4: s1   5: s1r1   6: s1r0   7: s1r0r1
         #  8: s0l0l1  9: s0l0  10: s0l1  11: s0  12: s0r1  13: s0r0  14: s0r0r1
@@ -236,20 +235,20 @@ class Setup(object):
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
         # 18 features (Chen & Manning 2014)
-        words = [w[i] if -1 != i else Setup.unknown for i in x]
+        words = [w[i] if i is not None else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
-        feats = []
-        for word in words:
-            featv = np.zeros(len(self.feat2idx), np.float32)
+        num_feat = len(self.feat2idx)
+        feat_vec = np.zeros(18 * num_feat, np.float32)
+        feat2idx = self.feat2idx.get
+        for idx, word in enumerate(words):
             for feat in word.feats.split("|"):
-                featv[self.feat2idx.get(feat, 0)] = 1.0
-            feats.append(featv)
+                feat_vec[num_feat * idx + feat2idx(feat, 0)] = 1.0
         return [
-            np.array([self.form2idx.get(word.form, 0) for word in words],
-                     np.uint16).reshape(1, 18),
-            np.array([self.upos2idx.get(word.upostag, 0) for word in words],
-                     np.uint8).reshape(1, 18),
-            np.concatenate(feats).reshape(1, -1)
+            np.fromiter((self.form2idx.get(word.form, 0) for word in words),
+                        np.uint16).reshape(1, 18),
+            np.fromiter((self.upos2idx.get(word.upostag, 0) for word in words),
+                        np.uint8).reshape(1, 18),
+            feat_vec.reshape(1, -1),
         ]  # model.predict takes list not tuple
 
     def save(self, file):
@@ -269,8 +268,8 @@ class Setup(object):
 # ud_path = "/data/ud-treebanks-conll2017/"
 # wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
 #            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
-#                     wv_path + "kk.skip.forms.50.vectors")
+# setup2 = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
+#                      wv_path + "kk.skip.forms.50.vectors")
 
 # from keras.utils import plot_model
 # plot_model(model, to_file='model.png')
