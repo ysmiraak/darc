@@ -5,6 +5,7 @@ from nn_mlp import Setup
 ud_path = "/data/ud-treebanks-conll2017/"
 
 for lang, code in lang_code:
+    print("testing on", lang, code, "...")
     dev_path = ud_path + "UD_{}/{}-ud-dev.conllu".format(lang, code)
     train_path = ud_path + "UD_{}/{}-ud-train.conllu".format(lang, code)
     embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \

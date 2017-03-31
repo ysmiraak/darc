@@ -241,7 +241,7 @@ class Setup(object):
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
         # 18 features (Chen & Manning 2014)
-        words = [w[i] if -1 != i else Setup.unknown for i in x]
+        words = [w[i] if i is not None else Setup.unknown for i in x]
         # set-valued feat (Alberti et al. 2015)
         num_feat = len(self.feat2idx)
         feat_vec = np.zeros(18 * num_feat, np.float32)
