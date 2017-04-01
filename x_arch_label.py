@@ -1,6 +1,6 @@
 from itertools import repeat
 from transition import Config, Oracle
-from conllu import Word, load, validate, write
+from conllu import Word, load, write
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
@@ -327,8 +327,10 @@ setup = Setup.build(
 model = setup.model()
 
 for epoch in range(10):
+    for sent in dev:
+        for word in sent.iter_words():
+            word.deprel = "_"
     setup.train(model, verbose=2)
     for sent in dev:
         setup.parse(model, sent)
-    validate(dev)
     write(dev, "./results/add_label_e{}.conllu".format(epoch))

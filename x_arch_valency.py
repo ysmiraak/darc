@@ -257,12 +257,14 @@ class Setup(object):
             for i in g[x[4]]:
                 try:
                     slot[self.slot2idx[w[i].deprel]] = 1.0
+                    # slot[self.slot2idx[w[i].deprel]] += 1.0
                 except KeyError:
                     pass
         if x[11] is not None:
             for i in g[x[11]]:
                 try:
                     slot[num_slot + self.slot2idx[w[i].deprel]] = 1.0
+                    # slot[num_slot + self.slot2idx[w[i].deprel]] += 1.0
                 except KeyError:
                     pass
         # # 2. slot = upos
