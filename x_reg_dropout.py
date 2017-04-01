@@ -3,7 +3,7 @@ from conllu import load, write
 
 dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
 
-setup = Setup.load("./setups/grc_proiel-labeled.npy")
+setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
 
 hidden_units = 200
 
