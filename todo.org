@@ -1,5 +1,7 @@
 * architecture
 
+- try label feature
+
 - propose structure for feat embedding
 
 - consider beam search
@@ -29,6 +31,8 @@
 * questions
 
 - tensorflow gpu
+
+- unlabeled parsing not better, why ?
 
 - regularization constant: adapt to |w| ?
 
