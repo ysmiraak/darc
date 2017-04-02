@@ -1,10 +1,10 @@
 from nn_mlp import Setup
 from conllu import load, write, validate
 
-dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+dev = list(load("./golds/grc_proiel-ud-dev.conllu"))
 setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
 
-# dev = list(load("./setups/zh-ud-dev.conllu"))
+# dev = list(load("./golds/zh-ud-dev.conllu"))
 # setup = Setup.load("./setups/zh_-proj_+label.npy")
 
 model = setup.model(

@@ -1,7 +1,7 @@
 from nn_mlp import Setup
 from conllu import load, write
 
-dev = list(load("./setups/grc_proiel-ud-dev.conllu"))
+dev = list(load("./golds/grc_proiel-ud-dev.conllu"))
 
 setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
 
@@ -27,5 +27,5 @@ for epoch in range(25):
     setup.train(model, verbose=2)
     for sent in dev:
         setup.parse(model, sent)
-    write(dev, "./results/dropout_{}_e{}.conllu"
+    write(dev, "./results/dropout_{}_e{:0>2d}.conllu"
           .format(hidden_units, epoch))

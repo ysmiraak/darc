@@ -20,7 +20,7 @@ train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
 # train_path = ud_path + "UD_Chinese/zh-ud-train.conllu"
 
 
-write(load(dev_path), "./setups/{}-ud-dev.conllu".format(lang))
+write(load(dev_path), "./golds/{}-ud-dev.conllu".format(lang))
 
 embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
                  "ud-2.0-baselinemodel-train-embeddings/" \
