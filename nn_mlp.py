@@ -271,5 +271,6 @@ class Setup(object):
 # setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
 #                     wv_path + "kk.skip.forms.50.vectors")
 
+# model = setup.model()
 # from keras.utils import plot_model
 # plot_model(model, to_file='model.png')

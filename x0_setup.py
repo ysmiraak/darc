@@ -4,12 +4,20 @@ from conllu import load, write
 ud_path = "/data/ud-treebanks-conll2017/"
 
 
-# ancient greek proiel
-lang = "grc_proiel"
+# # ancient greek proiel
+# lang = "grc_proiel"
+# projective = False
+# labeled = True
+# dev_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"
+# train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
+
+
+# persian
+lang = "fa"
 projective = False
 labeled = True
-dev_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"
-train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
+dev_path = ud_path + "UD_Persian/fa-ud-dev.conllu"
+train_path = ud_path + "UD_Persian/fa-ud-train.conllu"
 
 
 # # chinese

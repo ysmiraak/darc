@@ -24,26 +24,12 @@
 
 + try dropout
 
-+ try l2-reg for all, normalized by |w|
-
-- try glorot_normal initializer along with l2-reg
-
-* questions
-
-- tensorflow gpu
-
-- unlabeled parsing not better, why ?
-
-- regularization constant: adapt to |w| ?
-
-- multiple attachment to root in one sent ?
-
 * troubles
 
 ** single root
 
 the evaluation script doesn't allow more than one nodes to be attached to root in
-one sentence. split the sentence when this happens.
+one sentence. parataxis.
 
 ** empty words
 
