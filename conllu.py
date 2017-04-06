@@ -4,15 +4,19 @@ from collections import namedtuple
 cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', \
        'feats', 'head', 'deprel', 'deps', 'misc'
 
-dummy = 0, "", "_", "_", "_", "_", 0, "_", "_", "_"
-
 Sent = namedtuple('Sent', ('multi', ) + cols)
+
+Sent.cols = cols
+
+del cols
+
+Sent.dumb = 0, "", "", "", "", "", 0, "", "", ""
 
 
 def sent(lines):
     """[str] -> Sent"""
     multi = []
-    cols = [[x] for x in dummy]
+    cols = [[x] for x in Sent.dumb]
     for line in lines:
         args = line.split("\t")
         assert 10 == len(args)
@@ -58,7 +62,7 @@ def write(sents, file):
                     m += 1
                 else:
                     file.write("\t".join(
-                        [str(getattr(sent, col)[w]) for col in cols]))
+                        [str(getattr(sent, col)[w]) for col in Sent.cols]))
                     file.write("\n")
                     w += 1
             file.write("\n")

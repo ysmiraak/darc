@@ -2,15 +2,14 @@ from setup import Setup
 from conllu import load, write
 # from keras import constraints as const
 
-
-dev = list(load("./golds/fa-ud-dev.conllu"))
+lang = "fa"
 setup = Setup.load("./setups/fa-nonp.npy")
 
-# dev = list(load("./golds/grc_proiel-ud-dev.conllu"))
-# setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
+# lang = "grc_proiel"
+# setup = Setup.load("./setups/grc_proiel-nonp.npy")
 
-# dev = list(load("./golds/zh-ud-dev.conllu"))
-# setup = Setup.load("./setups/zh_-proj_+label.npy")
+# lang = "zh"
+# setup = Setup.load("./setups/zh-proj.npy")
 
 
 model = setup.model(
@@ -30,8 +29,10 @@ model = setup.model(
 )
 
 
+dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
+
 for epoch in range(10):
     setup.train(model, verbose=2)
     write([setup.parse(model, sent) for sent in dev],
-          "./results/e{:0>2d}.conllu"
-          .format(epoch))
+          "./results/{}-e{:0>2d}.conllu"
+          .format(lang, epoch))

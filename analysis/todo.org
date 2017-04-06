@@ -4,6 +4,8 @@
 
 - propose structure for feat embedding
 
+- valency feature, again
+
 - consider beam search
 
 - consider structured perceptron
@@ -14,9 +16,9 @@
 
 * parameter
 
-- try relu activation (and change initializers)
+- try relu activation
 
-+ optimize optimizers
+- try other initializers
 
 + optimize hidden units
 

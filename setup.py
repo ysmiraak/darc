@@ -1,6 +1,6 @@
 from itertools import repeat
 from transition import Config, Oracle
-from conllu import load, dummy
+from conllu import load, Sent
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
@@ -10,37 +10,37 @@ from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 # from keras import initializers as init
 # from keras import constraints as const
 
-#########################################################
-# |       | form | upostag | feats    | head | deprel | #
-# |-------+------+---------+----------+------+--------| #
-# | root  | </s> | ROOT    | Root=Yes |      | ????   | #
-# | dummy |      | _       | _        |    0 | _      | #
-#########################################################
-
-dumm_form, dumm_upos, dumm_feat = dummy[1], dummy[3], dummy[5]
-root_form, root_upos, root_feat = "</s>", "ROOT", "Root=Yes"
-
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
     __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
+    dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
+    dumb_upos, root_upos, obsc_upos = Sent.dumb[3], "ROOT", "_"
+    dumb_feat, root_feat, obsc_feat = Sent.dumb[5], "Root=Yes", "_"
+
     def __init__(self, sents, w2v, proj=False):
         super().__init__()
         if not sents:
             return
         # form_emb form2idx
-        form_emb = np.zeros((1 + len(w2v.index2word), 50), np.float32)
-        form2idx = {dumm_form: 0}  # "</s>" is in w2v.index2word
-        for idx, form in enumerate(w2v.index2word, 1):
-            form_emb[idx] = w2v.word_vec(form)
-            form2idx[form] = idx
+        pad_forms = self.dumb_form, self.root_form, self.obsc_form
+        pad = 0
+        for form in pad_forms:
+            if form not in w2v.vocab:
+                pad += 1
+        form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
+        form_emb[:len(w2v.index2word)] = w2v.syn0
+        form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
+        for form in pad_forms:
+            if form not in form2idx:
+                form2idx[form] = len(form2idx)
         self.form_emb = form_emb
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
-        upos2idx = {dumm_upos: 0, root_upos: 1}
-        feat2idx = {dumm_feat: 0, root_feat: 1}
+        upos2idx = {self.dumb_upos: 0, self.root_upos: 1, self.obsc_upos: 2}
+        feat2idx = {self.dumb_feat: 0, self.root_feat: 1, self.obsc_feat: 2}
         rels = set()
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -193,8 +193,14 @@ class Setup(object):
         assert feat.shape == (18 * len(self.feat2idx), )
 
         """
-        i, s, g, sent = config.input, config.stack, config.graph, config.sent
-        x = list(repeat(0, 18))
+        form2idx = self.form2idx
+        upos2idx = self.upos2idx
+        feat2idx = self.feat2idx
+        obsc_form = form2idx[self.obsc_form]
+        obsc_upos = upos2idx[self.obsc_upos]
+        obsc_feat = feat2idx[self.obsc_feat]
+        sent, i, s, g = config.sent, config.input, config.stack, config.graph
+        x = list(repeat(0, 18))  # node 0 in each sent is dumb
         #  0: s0       1: s1       2: s0l1     3: s1l1     4: s0r1     5: s1r1
         #  6: s0l0     7: s1l0     8: s0r0     9: s1r0
         # 10: s0l0l1  11: s1l0l1  12: s0r0r1  13: s1r0r1
@@ -241,22 +247,22 @@ class Setup(object):
         form = [sent.form[i] for i in x]
         upos = [sent.upostag[i] for i in x]
         feat = [sent.feats[i] for i in x]
-        # special treatment for root node
+        # special treatments for root
         if 2 <= len(s) and 0 == s[-2]:
-            form[1] = root_form
-            upos[1] = root_upos
-            feat[1] = root_feat
+            # s1 at idx 1 is root
+            form[1] = self.root_form
+            upos[1] = self.root_upos
+            feat[1] = self.root_feat
         # set-valued feat (Alberti et al. 2015)
-        num_feat = len(self.feat2idx)
+        num_feat = len(feat2idx)
         feat_vec = np.zeros(18 * num_feat, np.float32)
-        feat2idx = self.feat2idx.get
         for idx, feats in enumerate(feat):
             for feat in feats.split("|"):
-                feat_vec[num_feat * idx + feat2idx(feat, 0)] = 1.0
+                feat_vec[num_feat * idx + feat2idx.get(feat, obsc_feat)] = 1.0
         return [
-            np.fromiter((self.form2idx.get(x, 0)
+            np.fromiter((form2idx.get(x, obsc_form)
                          for x in form), np.uint16).reshape(1, 18),
-            np.fromiter((self.upos2idx.get(x, 0)
+            np.fromiter((upos2idx.get(x, obsc_upos)
                          for x in upos), np.uint8).reshape(1, 18),
             feat_vec.reshape(1, -1),
         ]  # model.predict takes list not tuple
@@ -275,11 +281,11 @@ class Setup(object):
         return setup
 
 
-# ud_path = "/data/ud-treebanks-conll2017/"
-# wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
-#            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
-#                     wv_path + "kk.skip.forms.50.vectors")
+ud_path = "/data/ud-treebanks-conll2017/"
+wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
+           "ud-2.0-baselinemodel-train-embeddings/")
+setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
+                    wv_path + "kk.skip.forms.50.vectors")
 
 # model = setup.model()
 # from keras.utils import plot_model
