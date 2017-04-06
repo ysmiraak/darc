@@ -1,11 +1,17 @@
 from nn_mlp import Setup
-from conllu import load, write, validate
+from conllu import load, write
+# from keras import constraints as const
 
-dev = list(load("./golds/grc_proiel-ud-dev.conllu"))
-setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
+
+dev = list(load("./golds/fa-ud-dev.conllu"))
+setup = Setup.load("./setups/fa-nonp.npy")
+
+# dev = list(load("./golds/grc_proiel-ud-dev.conllu"))
+# setup = Setup.load("./setups/grc_proiel_-proj_+label.npy")
 
 # dev = list(load("./golds/zh-ud-dev.conllu"))
 # setup = Setup.load("./setups/zh_-proj_+label.npy")
+
 
 model = setup.model(
     # form_emb_reg=None,
@@ -23,10 +29,9 @@ model = setup.model(
     # optimizer='adamax'
 )
 
+
 for epoch in range(10):
     setup.train(model, verbose=2)
-    for sent in dev:
-        setup.parse(model, sent)
-    validate(dev)
-    write(dev, "./results/e{}.conllu"
+    write([setup.parse(model, sent) for sent in dev],
+          "./results/e{:0>2d}.conllu"
           .format(epoch))
