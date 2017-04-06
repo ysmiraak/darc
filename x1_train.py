@@ -1,4 +1,4 @@
-from nn_mlp import Setup
+from setup import Setup
 from conllu import load, write
 # from keras import constraints as const
 

@@ -1,6 +1,6 @@
 from ud2 import lang_code
 from conllu import load, write
-from nn_mlp import Setup
+from setup import Setup
 
 ud_path = "/data/ud-treebanks-conll2017/"
 

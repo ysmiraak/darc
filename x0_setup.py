@@ -1,4 +1,4 @@
-from nn_mlp import Setup
+from setup import Setup
 from conllu import load, write
 
 ud_path = "/data/ud-treebanks-conll2017/"
