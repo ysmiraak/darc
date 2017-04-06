@@ -25,22 +25,22 @@ class Setup(object):
         if not sents:
             return
         # form_emb form2idx
-        pad_forms = self.dumb_form, self.root_form, self.obsc_form
+        specials = self.dumb_form, self.root_form, self.obsc_form
         pad = 0
-        for form in pad_forms:
+        for form in specials:
             if form not in w2v.vocab:
                 pad += 1
         form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
         form_emb[:len(w2v.index2word)] = w2v.syn0
         form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
-        for form in pad_forms:
+        for form in specials:
             if form not in form2idx:
                 form2idx[form] = len(form2idx)
         self.form_emb = form_emb
         self.form2idx = form2idx
         # upos2idx feat2idx idx2tran
         upos2idx = {self.dumb_upos: 0, self.root_upos: 1, self.obsc_upos: 2}
-        feat2idx = {self.dumb_feat: 0, self.root_feat: 1, self.obsc_feat: 2}
+        feat2idx = {self.dumb_feat: 0, self.root_feat: 1}
         rels = set()
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -110,13 +110,14 @@ class Setup(object):
               output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model"""
-        form = Input(name="form", shape=(18, ), dtype=np.uint16)
-        upos = Input(name="upos", shape=(18, ), dtype=np.uint8)
-        feat = Input(name="feat", shape=(18 * len(self.feat2idx), ))
+        num_node = 18
+        form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
+        upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
+        feat = Input(name="feat", shape=(num_node * len(self.feat2idx), ))
         i = [form, upos, feat]
         form = Embedding(
             input_dim=len(self.form2idx),
-            input_length=18,
+            input_length=num_node,
             output_dim=50,
             embeddings_initializer='zeros',
             embeddings_regularizer=form_emb_reg,
@@ -124,7 +125,7 @@ class Setup(object):
             name="form_emb")(form)
         upos = Embedding(
             input_dim=len(self.upos2idx),
-            input_length=18,
+            input_length=num_node,
             output_dim=upos_emb_dim,
             embeddings_initializer='uniform',
             embeddings_regularizer=upos_emb_reg,
@@ -156,8 +157,13 @@ class Setup(object):
             optimizer=optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'])
-        m.get_layer("form_emb").set_weights([self.form_emb.copy()])
-        # copy necessary ????
+        # use pretrained form embeddings
+        m.get_layer("form_emb").set_weights([self.form_emb])
+        # obsc_upos embedding will never be trained, set to zero.
+        # TODO: use pretrained upos embeddings
+        w = m.get_layer("upos_emb").get_weights()
+        w[0][self.upos2idx[self.obsc_upos]] = 0.0
+        m.get_layer("upos_emb").set_weights(w)
         return m
 
     def train(self, model, *args, **kwargs):
@@ -193,18 +199,14 @@ class Setup(object):
         assert feat.shape == (18 * len(self.feat2idx), )
 
         """
-        form2idx = self.form2idx
-        upos2idx = self.upos2idx
-        feat2idx = self.feat2idx
-        obsc_form = form2idx[self.obsc_form]
-        obsc_upos = upos2idx[self.obsc_upos]
-        obsc_feat = feat2idx[self.obsc_feat]
-        sent, i, s, g = config.sent, config.input, config.stack, config.graph
-        x = list(repeat(0, 18))  # node 0 in each sent is dumb
+        num_node = 18
+        # 18 features (Chen & Manning 2014)
         #  0: s0       1: s1       2: s0l1     3: s1l1     4: s0r1     5: s1r1
         #  6: s0l0     7: s1l0     8: s0r0     9: s1r0
         # 10: s0l0l1  11: s1l0l1  12: s0r0r1  13: s1r0r1
         # 14: s2      15: i0      16: i1      17: i2
+        sent, i, s, g = config.sent, config.input, config.stack, config.graph
+        x = list(repeat(0, num_node))  # node 0 in each sent is dumb
         if 1 <= len(s):
             x[0] = s[-1]  # s0
             y = g[x[0]]
@@ -243,7 +245,6 @@ class Setup(object):
                 x[16] = i[-2]  # i1
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
-        # 18 features (Chen & Manning 2014)
         form = [sent.form[i] for i in x]
         upos = [sent.upostag[i] for i in x]
         feat = [sent.feats[i] for i in x]
@@ -253,17 +254,26 @@ class Setup(object):
             form[1] = self.root_form
             upos[1] = self.root_upos
             feat[1] = self.root_feat
+        # locals for faster access
+        form2idx = self.form2idx
+        upos2idx = self.upos2idx
+        feat2idx = self.feat2idx
+        obsc_form = form2idx[self.obsc_form]
+        obsc_upos = upos2idx[self.obsc_upos]
         # set-valued feat (Alberti et al. 2015)
         num_feat = len(feat2idx)
-        feat_vec = np.zeros(18 * num_feat, np.float32)
+        feat_vec = np.zeros(num_node * num_feat, np.float32)
         for idx, feats in enumerate(feat):
             for feat in feats.split("|"):
-                feat_vec[num_feat * idx + feat2idx.get(feat, obsc_feat)] = 1.0
+                try:
+                    feat_vec[num_feat * idx + feat2idx[feat]] = 1.0
+                except KeyError:
+                    pass
         return [
             np.fromiter((form2idx.get(x, obsc_form)
-                         for x in form), np.uint16).reshape(1, 18),
+                         for x in form), np.uint16).reshape(1, -1),
             np.fromiter((upos2idx.get(x, obsc_upos)
-                         for x in upos), np.uint8).reshape(1, 18),
+                         for x in upos), np.uint8).reshape(1, -1),
             feat_vec.reshape(1, -1),
         ]  # model.predict takes list not tuple
 
@@ -281,11 +291,11 @@ class Setup(object):
         return setup
 
 
-ud_path = "/data/ud-treebanks-conll2017/"
-wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
-           "ud-2.0-baselinemodel-train-embeddings/")
-setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
-                    wv_path + "kk.skip.forms.50.vectors")
+# ud_path = "/data/ud-treebanks-conll2017/"
+# wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
+#            "ud-2.0-baselinemodel-train-embeddings/")
+# setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
+#                     wv_path + "kk.skip.forms.50.vectors")
 
 # model = setup.model()
 # from keras.utils import plot_model

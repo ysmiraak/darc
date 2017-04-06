@@ -10,7 +10,7 @@ Sent.cols = cols
 
 del cols
 
-Sent.dumb = 0, "", "", "", "", "", 0, "", "", ""
+Sent.dumb = 0, "", "_", "", "_", "", 0, "_", "_", "_"
 
 
 def sent(lines):

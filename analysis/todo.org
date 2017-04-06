@@ -2,6 +2,8 @@
 
 - try label feature
 
+- pretrained upos embedding
+
 - propose structure for feat embedding
 
 - valency feature, again

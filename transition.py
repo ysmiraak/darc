@@ -98,7 +98,7 @@ class Oracle(object):
         config = Config(sent)
         while not config.is_terminal():
             act, arg = self.predict(config)
-            if 'shift' == act and not config.input:
+            if not config.doable(act):
                 break
             getattr(config, act)(arg)
         self._mpcrt(config.graph, 0, 0)
