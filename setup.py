@@ -1,6 +1,6 @@
 from itertools import repeat
 from transition import Config, Oracle
-from conllu import load, Sent
+from conllu import Sent, load
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
@@ -159,7 +159,7 @@ class Setup(object):
             metrics=['accuracy'])
         # use pretrained form embeddings
         m.get_layer("form_emb").set_weights([self.form_emb])
-        # obsc_upos embedding will never be trained, set to zero.
+        # obsc_upos embedding will never be trained, set to zero
         # TODO: use pretrained upos embeddings
         w = m.get_layer("upos_emb").get_weights()
         w[0][self.upos2idx[self.obsc_upos]] = 0.0

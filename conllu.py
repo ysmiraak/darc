@@ -3,32 +3,40 @@ from collections import namedtuple
 
 cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', \
        'feats', 'head', 'deprel', 'deps', 'misc'
-
 Sent = namedtuple('Sent', ('multi', ) + cols)
-
 Sent.cols = cols
-
 del cols
 
-Sent.dumb = 0, "", "_", "", "_", "", 0, "_", "_", "_"
+Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
+# id=0 serves as root; form="", upostag="", feats="" used by setup as sentinel
+# for missing nodes; head=0, deprel="_" used by transition as default for
+# consistency; the others are not used.
 
 
 def sent(lines):
     """[str] -> Sent"""
     multi = []
+    empty = []
     cols = [[x] for x in Sent.dumb]
     for line in lines:
         args = line.split("\t")
         assert 10 == len(args)
         if "-" in args[0]:
             multi.append(args)
+        elif ":" in args[0]:
+            empty.append(args)
         else:
             args[0] = int(args[0])
             args[7] = args[7].split(":")[0]  # acl:relcl -> acl
-            if "_" != args[6]:  # head might be empty for interim results
+            try:  # head might be empty for interim results
                 args[6] = int(args[6])
+            except ValueError:
+                pass
             for col, val in zip(cols, args):
                 col.append(val)
+    if empty:
+        # TODO: handle empty
+        pass
     return Sent(multi, *cols)
 
 
