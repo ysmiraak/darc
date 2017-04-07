@@ -28,12 +28,6 @@
 the evaluation script doesn't allow more than one nodes to be attached to root in
 one sentence. parataxis.
 
-** empty words
-
-3 treebanks have empty words (UD_English UD_Finnish UD_Russian-SynTagRus). my
-parser can't deal with that. solution: make our own treebanks for them, with
-changed indexings, turning empty words into normal words.
-
 ** retrain udpipe models
 
 for tokenizing, sent-splitting, lemmatizing, postagging, and morphtagging

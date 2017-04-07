@@ -63,7 +63,8 @@ class Config(object):
         for h, ids in enumerate(self.graph):
             for i in ids:
                 head[i] = h
-        return self.sent._replace(head=head, deprel=self.deprel)
+        return self.sent._replace(
+            head=head, deprel=[deprel.split(":")[0] for deprel in self.deprel])
 
 
 class Oracle(object):

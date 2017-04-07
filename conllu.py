@@ -16,27 +16,23 @@ Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
 def sent(lines):
     """[str] -> Sent"""
     multi = []
-    empty = []
     cols = [[x] for x in Sent.dumb]
     for line in lines:
         args = line.split("\t")
         assert 10 == len(args)
-        if "-" in args[0]:
-            multi.append(args)
-        elif ":" in args[0]:
-            empty.append(args)
-        else:
+        try:
             args[0] = int(args[0])
-            args[7] = args[7].split(":")[0]  # acl:relcl -> acl
-            try:  # head might be empty for interim results
-                args[6] = int(args[6])
-            except ValueError:
-                pass
-            for col, val in zip(cols, args):
-                col.append(val)
-    if empty:
-        # TODO: handle empty
-        pass
+        except ValueError:
+            if "-" in args[0]:
+                multi.append(line)
+                continue
+        try:  # head might be empty for interim results
+            args[6] = int(args[6])
+        except ValueError:
+            pass
+        # args[7] = args[7].split(":")[0]  # acl:relcl -> acl
+        for col, val in zip(cols, args):
+            col.append(val)
     return Sent(multi, *cols)
 
 
@@ -61,7 +57,7 @@ def write(sents, file):
     """sents: [Sent]"""
     with open(file, 'w', encoding='utf-8') as file:
         for sent in sents:
-            multi_idx = [int(multi[0].split("-")[0]) for multi in sent.multi]
+            multi_idx = [int(multi[:multi.index("-")]) for multi in sent.multi]
             w, m = 1, 0
             while w < len(sent.id):
                 if m < len(multi_idx) and w == multi_idx[m]:
