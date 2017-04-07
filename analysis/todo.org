@@ -1,16 +1,8 @@
-* parameter
-
-- try relu activation
-
-- try other initializers
-
-+ optimize hidden units
-
 * dropout
 
 - on embeddings
 
-- on hidden nodes
+- on hidden nodes and optimize hidden units
 
 * architecture
 
@@ -18,12 +10,15 @@
 
 - valency feature, again
 
+- consider iterative parsing
+
 - consider beam search
 
 - consider structured perceptron
 
 - consider lemma instead of form
 
+* silver training data
 * troubles
 
 ** single root
@@ -66,3 +61,4 @@ and maybe pretrain postag embeddings.
 ** check if udpipe doesn't handle multiwords
 
 ** surprise languages
+
