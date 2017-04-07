@@ -1,57 +1,64 @@
-from itertools import repeat
+from itertools import repeat, islice
 from transition import Config, Oracle
-from conllu import Word, load, validate, write
+from conllu import Sent, load, write
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
-
-# from keras import regularizers as reg
-# from keras import initializers as init
-# from keras import constraints as const
+from keras.constraints import unit_norm  # , max_norm
 
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'slot2idx', 'idx2tran', \
+    __slots__ = 'form2idx', 'upos2idx', 'drel2idx', 'feat2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
-    unknown = Word(None, form="", upostag="_", feats="_")
+    dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
+    dumb_upos, root_upos, obsc_upos = Sent.dumb[3], "ROOT", "_"
+    dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
+    dumb_drel = Sent.dumb[7]
 
-    def __init__(self, sents, w2v, labeled=True, projective=False):
+    def __init__(self, sents, w2v, proj=False):
         super().__init__()
         if not sents:
             return
         # form_emb form2idx
-        form_emb = np.zeros((1 + len(w2v.index2word), 50), np.float32)
-        form2idx = {Setup.unknown.form: 0}
-        for idx, form in enumerate(w2v.index2word, 1):
-            form_emb[idx] = w2v.word_vec(form)
-            form2idx[form] = idx
-        self.form_emb = form_emb
-        self.form2idx = form2idx
-        # upos2idx feat2idx slot2idx idx2tran
-        upos2idx = {Setup.unknown.upostag: 0, 'ROOT': 1}  # 1:root
-        feat2idx = {Setup.unknown.feats: 0}
-        rels = set() if labeled else [None]
+        specials = self.dumb_form, self.root_form, self.obsc_form
+        pad = 0
+        for form in specials:
+            if form not in w2v.vocab:
+                pad += 1
+        self.form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
+        self.form_emb[:len(w2v.index2word)] = w2v.syn0
+        self.form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
+        del w2v
+        for form in specials:
+            if form not in self.form2idx:
+                self.form2idx[form] = len(self.form2idx)
+        # upos2idx feat2idx drel2idx idx2tran
+        upos2idx = {self.dumb_upos: 0, self.root_upos: 1, self.obsc_upos: 2}
+        feat2idx = {self.dumb_feat: 0, self.root_feat: 1}
+        rels = set()
         if not hasattr(sents, '__len__'):
             sents = list(sents)
         for sent in sents:
-            for word in sent.iter_words():
-                if word.upostag not in upos2idx:
-                    upos2idx[word.upostag] = len(upos2idx)
-                for feat in word.feats.split("|"):
+            it = zip(sent.deprel, sent.upostag, sent.feats)
+            next(it)
+            for rel, upos, feats in it:
+                rels.add(rel)
+                if upos not in upos2idx:
+                    upos2idx[upos] = len(upos2idx)
+                for feat in feats.split("|"):
                     if feat not in feat2idx:
                         feat2idx[feat] = len(feat2idx)
-                if labeled:
-                    rels.add(word.deprel)
         self.upos2idx = upos2idx
         self.feat2idx = feat2idx
-        self.slot2idx = {rel: idx for idx, rel in enumerate(rels)}
+        self.drel2idx = {rel: idx for idx, rel in enumerate(rels)}
+        self.drel2idx[self.dumb_drel] = len(self.drel2idx)
         self.idx2tran = [('shift', None)]
         self.idx2tran.extend(('right', rel) for rel in rels)
         self.idx2tran.extend(('left', rel) for rel in rels)
-        if not projective:
+        if not proj:
             self.idx2tran.append(('swap', None))
         # x y
         tran2idx = {}
@@ -59,109 +66,113 @@ class Setup(object):
             hotv = np.zeros(len(self.idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        data = [], [], [], [], []
-        tran_append, form_append, upos_append, feat_append, slot_append \
+        data = [], [], [], [], [], []
+        tran_append, form_append, upos_append, drel_append, feat_append, slot_append \
             = [d.append for d in data]
         for sent in sents:
-            oracle = Oracle(sent, projective=projective, labeled=labeled)
+            oracle = Oracle(sent, proj=proj)
             config = Config(sent)
             while not config.is_terminal():
                 tran = oracle.predict(config)
-                if 'shift' == tran[0] and not config.input:
+                if not config.doable(tran[0]):
                     # this happends on a non-proj sent with proj setting
                     break
-                feat = Setup.feature(self, config)
+                feat = self.feature(config)
                 tran_append(tran2idx[tran])
                 form_append(feat[0])
                 upos_append(feat[1])
-                feat_append(feat[2])
-                slot_append(feat[3])
-                getattr(config, tran[0])(tran[1], False)
+                drel_append(feat[2])
+                feat_append(feat[3])
+                slot_append(feat[4])
+                getattr(config, tran[0])(tran[1])
         self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
 
     @staticmethod
-    def build(train_conllu, embedding_txt, labeled=True, projective=False):
+    def build(train_conllu, embedding_txt, projective=False):
         """-> Setup; build from files"""
         return Setup(
             load(train_conllu),
             KeyedVectors.load_word2vec_format(embedding_txt),
-            labeled=labeled,
-            projective=projective)
+            proj=projective)
 
     def model(self,
-              form_emb_reg=None,
-              form_emb_const='unit_norm',
               upos_emb_dim=10,
-              upos_emb_reg=None,
-              upos_emb_const='unit_norm',
-              inputs_dropout=0.0,
+              drel_emb_dim=15,
+              emb_init='uniform',
+              emb_const=unit_norm(),
+              emb_dropout=0.0,
               hidden_units=200,
-              hidden_reg=None,
+              hidden_init='glorot_uniform',
               hidden_const=None,
               hidden_dropout=0.0,
-              output_reg=None,
+              output_init='glorot_uniform',
               output_const=None,
+              activation='relu',
               optimizer='adamax'):
-        """-> keras.models.Model
-
-        feature: Feature
-
-        w2v: gensim.models.keyedvectors.KeyedVectors
-
-        """
-        form = Input(name='form', shape=(18, ), dtype=np.uint16)
-        upos = Input(name='upos', shape=(18, ), dtype=np.uint8)
-        feat = Input(name='feat', shape=(18 * len(self.feat2idx), ))
-        # 1. slot = deprel
-        slot = Input(name='slot', shape=(2 * len(self.slot2idx), ))
-        # # 2. slot = upos
-        # slot = Input(name='slot', shape=(2 * len(self.upos2idx), ))
-        i = [form, upos, feat, slot]
+        """-> keras.models.Model"""
+        num_node = 18
+        form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
+        upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
+        drel = Input(name="drel", shape=(num_node - 2, ), dtype=np.uint8)
+        feat = Input(name="feat", shape=(num_node * len(self.feat2idx), ))
+        slot = Input(name='slot', shape=(2 * len(self.drel2idx), ))
+        i = [form, upos, drel, feat, slot]
         form = Embedding(
             input_dim=len(self.form2idx),
-            input_length=18,
+            input_length=num_node,
             output_dim=50,
             embeddings_initializer='zeros',
-            embeddings_regularizer=form_emb_reg,
-            embeddings_constraint=form_emb_const,
-            name='form_emb')(form)
+            embeddings_constraint=emb_const,
+            name="form_emb")(form)
         upos = Embedding(
             input_dim=len(self.upos2idx),
-            input_length=18,
+            input_length=num_node,
             output_dim=upos_emb_dim,
-            embeddings_initializer='uniform',
-            embeddings_regularizer=upos_emb_reg,
-            embeddings_constraint=upos_emb_const,
-            name='upos_emb')(upos)
-        form = Flatten(name='form_flat')(form)
-        upos = Flatten(name='upos_flat')(upos)
-        o = Concatenate(name='inputs')([form, upos, feat, slot])
-        if inputs_dropout:
-            o = Dropout(name='inputs_dropout', rate=inputs_dropout)(o)
+            embeddings_initializer=emb_init,
+            embeddings_constraint=emb_const,
+            name="upos_emb")(upos)
+        drel = Embedding(
+            input_dim=len(self.drel2idx),
+            input_length=num_node - 2,
+            output_dim=drel_emb_dim,
+            embeddings_initializer=emb_init,
+            embeddings_constraint=emb_const,
+            name="drel_emb")(drel)
+        form = Flatten(name="form_flat")(form)
+        upos = Flatten(name="upos_flat")(upos)
+        drel = Flatten(name="drel_flat")(drel)
+        if emb_dropout:
+            form = Dropout(name="form_dropout", rate=emb_dropout)(form)
+            upos = Dropout(name="upos_dropout", rate=emb_dropout)(upos)
+            drel = Dropout(name="drel_dropout", rate=emb_dropout)(drel)
+        o = Concatenate(name="inputs")([form, upos, drel, feat, slot])
         o = Dense(
             units=hidden_units,
-            activation='tanh',
-            kernel_initializer='glorot_uniform',
-            kernel_regularizer=hidden_reg,
+            activation=activation,
+            kernel_initializer=hidden_init,
             kernel_constraint=hidden_const,
-            name='hidden')(o)
+            name="hidden")(o)
         if hidden_dropout:
-            o = Dropout(name='hidden_dropout', rate=hidden_dropout)(o)
+            o = Dropout(name="hidden_dropout", rate=hidden_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer='glorot_uniform',
-            kernel_regularizer=output_reg,
+            kernel_initializer=output_init,
             kernel_constraint=output_const,
-            name='output')(o)
-        m = Model(i, o, name='darc')
+            name="output")(o)
+        m = Model(i, o, name="darc")
         m.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'])
-        m.get_layer('form_emb').set_weights([self.form_emb.copy()])
-        # copy necessary ????
+        # use pretrained form embeddings
+        m.get_layer("form_emb").set_weights([self.form_emb])
+        # obsc_upos embedding will never be trained, set to zero
+        # TODO: use pretrained upos embeddings
+        w = m.get_layer("upos_emb").get_weights()
+        w[0][self.upos2idx[self.obsc_upos]] = 0.0
+        m.get_layer("upos_emb").set_weights(w)
         return m
 
     def train(self, model, *args, **kwargs):
@@ -169,13 +180,13 @@ class Setup(object):
         model.fit(self.x, self.y, *args, **kwargs)
 
     def parse(self, model, sent):
-        """mutates sent"""
+        """-> Sent"""
         config = Config(sent)
         while not config.is_terminal():
             if 2 > len(config.stack):
                 config.shift()
                 continue
-            prob = model.predict(Setup.feature(self, config), 1).ravel()
+            prob = model.predict(self.feature(config), 1).ravel()
             good = False
             for r in prob.argsort()[::-1]:
                 act, arg = self.idx2tran[r]
@@ -186,104 +197,111 @@ class Setup(object):
             if not good:
                 print("WARNING!!!! FAILED TO PARSE:",
                       " ".join([w.form for w in sent]))
-                return
+                break
+        return config.finish()
 
     def feature(self, config):
-        """Config -> [numpy.ndarray] :as form, upos, feat
+        """Config -> [numpy.ndarray] :as form, upos, drel, feat
 
         assert form.shape == upos.shape == (18, )
+
+        assert drel.shape == (16, )
 
         assert feat.shape == (18 * len(self.feat2idx), )
 
         """
-        w, i, s, g = config.words, config.input, config.stack, config.graph
-        x = list(repeat(None, 18))
-        #  0: s2
-        #  1: s1l0l1  2: s1l0   3: s1l1   4: s1   5: s1r1   6: s1r0   7: s1r0r1
-        #  8: s0l0l1  9: s0l0  10: s0l1  11: s0  12: s0r1  13: s0r0  14: s0r0r1
-        # 15: i0     16: i1    17: i2
+        num_node = 18
+        # 18 features (Chen & Manning 2014)
+        #  0: s0       1: s1       2: s0l1     3: s1l1     4: s0r1     5: s1r1
+        #  6: s0l0     7: s1l0     8: s0r0     9: s1r0
+        # 10: s0l0l1  11: s1l0l1  12: s0r0r1  13: s1r0r1
+        # 14: s2      15: i0      16: i1      17: i2
+        i, s, g = config.input, config.stack, config.graph
+        x = list(repeat(0, num_node))  # node 0 in each sent is dumb
         if 1 <= len(s):
-            x[11] = s[-1]  # s0
-            y = g[x[11]]
+            x[0] = s[-1]  # s0
+            y = g[x[0]]
             if y:
                 if 2 <= len(y):
-                    x[10] = y[1]  # s0l1
-                    x[12] = y[-2]  # s0r1
-                x[9] = y[0]  # s0l0
-                x[13] = y[-1]  # s0r0
-                y = g[x[9]]
+                    x[2] = y[1]  # s0l1
+                    x[4] = y[-2]  # s0r1
+                x[6] = y[0]  # s0l0
+                x[8] = y[-1]  # s0r0
+                y = g[x[6]]
                 if y:
-                    x[8] = y[0]  # s0l0l1
-                y = g[x[13]]
+                    x[10] = y[0]  # s0l0l1
+                y = g[x[8]]
                 if y:
-                    x[14] = y[-1]  # s0r0r1
+                    x[12] = y[-1]  # s0r0r1
             if 2 <= len(s):
-                x[4] = s[-2]  # s1
-                y = g[x[4]]
+                x[1] = s[-2]  # s1
+                y = g[x[1]]
                 if y:
                     if 2 <= len(y):
                         x[3] = y[1]  # s1l1
                         x[5] = y[-2]  # s1r1
-                    x[2] = y[0]  # s1l0
-                    x[6] = y[-1]  # s1r0
-                    y = g[x[2]]
+                    x[7] = y[0]  # s1l0
+                    x[9] = y[-1]  # s1r0
+                    y = g[x[7]]
                     if y:
-                        x[1] = y[0]  # s1l0l1
-                    y = g[x[6]]
+                        x[11] = y[0]  # s1l0l1
+                    y = g[x[9]]
                     if y:
-                        x[7] = y[-1]  # s1r0r1
+                        x[13] = y[-1]  # s1r0r1
                 if 3 <= len(s):
-                    x[0] = s[-3]  # s2
+                    x[14] = s[-3]  # s2
         if 1 <= len(i):
             x[15] = i[-1]  # i0
             if 2 <= len(i):
                 x[16] = i[-2]  # i1
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
-        # 18 features (Chen & Manning 2014)
-        words = [w[i] if i is not None else Setup.unknown for i in x]
+        # form upos
+        form2idx = self.form2idx.get
+        upos2idx = self.upos2idx.get
+        form_unk = form2idx(self.obsc_form)
+        upos_unk = upos2idx(self.obsc_upos)
+        form = config.sent.form
+        upos = config.sent.upostag
+        form = np.fromiter((form2idx(form[i], form_unk) for i in x), np.uint16)
+        upos = np.fromiter((upos2idx(upos[i], upos_unk) for i in x), np.uint8)
+        # drel
+        drel2idx = self.drel2idx
+        drel = config.deprel
+        drel = np.fromiter((drel2idx[drel[i]]
+                            for i in islice(x, 2, None)), np.uint8)
+        # feats
+        feats = config.sent.feats
+        feats = [feats[i] for i in x]
+        # special treatments for root
+        if 2 <= len(s) and 0 == s[-2]:
+            # s1 at idx 1 is root
+            form[1] = form2idx(self.root_form)
+            upos[1] = upos2idx(self.root_upos)
+            feats[1] = self.root_feat
         # set-valued feat (Alberti et al. 2015)
-        num_feat = len(self.feat2idx)
-        feat_vec = np.zeros(18 * num_feat, np.float32)
-        feat2idx = self.feat2idx.get
-        for idx, word in enumerate(words):
-            for feat in word.feats.split("|"):
-                feat_vec[num_feat * idx + feat2idx(feat, 0)] = 1.0
-        # add valency feature slot
-        # 1. slot = deprel
-        num_slot = len(self.slot2idx)
+        feat2idx = self.feat2idx
+        num_feat = len(feat2idx)
+        feat = np.zeros(num_node * num_feat, np.float32)
+        for idx, fts in enumerate(feats):
+            for ft in fts.split("|"):
+                try:
+                    feat[num_feat * idx + feat2idx[ft]] = 1.0
+                except KeyError:
+                    pass
+        # valency feature
+        num_slot = len(self.drel2idx)
         slot = np.zeros(2 * num_slot, np.float32)
-        if x[4] is not None:
-            for i in g[x[4]]:
-                try:
-                    slot[self.slot2idx[w[i].deprel]] = 1.0
-                    # slot[self.slot2idx[w[i].deprel]] += 1.0
-                except KeyError:
-                    pass
-        if x[11] is not None:
-            for i in g[x[11]]:
-                try:
-                    slot[num_slot + self.slot2idx[w[i].deprel]] = 1.0
-                    # slot[num_slot + self.slot2idx[w[i].deprel]] += 1.0
-                except KeyError:
-                    pass
-        # # 2. slot = upos
-        # num_slot = len(self.upos2idx)
-        # slot = np.zeros(2 * num_slot, np.float32)
-        # if x[4] is not None:
-        #     for i in g[x[4]]:
-        #         slot[self.upos2idx.get(w[i].upostag, 0)] = 1.0
-        # if x[11] is not None:
-        #     for i in g[x[11]]:
-        #         slot[num_slot + self.upos2idx.get(w[i].upostag, 0)] = 1.0
-        return [
-            np.fromiter((self.form2idx.get(word.form, 0) for word in words),
-                        np.uint16).reshape(1, 18),
-            np.fromiter((self.upos2idx.get(word.upostag, 0) for word in words),
-                        np.uint8).reshape(1, 18),
-            feat_vec.reshape(1, -1),
-            slot.reshape(1, -1),
-        ]  # model.predict takes list not tuple
+        if s:
+            for i in g[x[0]]:
+                slot[drel2idx[config.deprel[i]]] = 1.0
+                # slot[drel2idx[config.deprel[i]]] += 1.0
+        if 2 <= len(s):
+            for i in g[x[1]]:
+                slot[num_slot + drel2idx[config.deprel[i]]] = 1.0
+                # slot[num_slot + drel2idx[config.deprel[i]]] += 1.0
+        form.shape = upos.shape = drel.shape = feat.shape = slot.shape = 1, -1
+        return [form, upos, drel, feat, slot]  # model.predict takes list
 
     def save(self, file):
         """as npy file"""
@@ -299,23 +317,40 @@ class Setup(object):
         return setup
 
 
-slot = "deprel"
-
 ud_path = "/data/ud-treebanks-conll2017/"
-wv_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
-          "ud-2.0-baselinemodel-train-embeddings/"
 
-dev = list(load(ud_path + "/UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"))
+# persian
+lang = "fa"
+proj = False
+dev_path = ud_path + "UD_Persian/fa-ud-dev.conllu"
+train_path = ud_path + "UD_Persian/fa-ud-train.conllu"
 
-setup = Setup.build(
-    ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu",
-    wv_path + "grc_proiel.skip.forms.50.vectors")
+# # ancient greek proiel
+# lang = "grc_proiel"
+# proj = False
+# dev_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-dev.conllu"
+# train_path = ud_path + "UD_Ancient_Greek-PROIEL/grc_proiel-ud-train.conllu"
+
+# # chinese
+# lang = "zh"
+# proj = True
+# dev_path = ud_path + "UD_Chinese/zh-ud-dev.conllu"
+# train_path = ud_path + "UD_Chinese/zh-ud-train.conllu"
+
+embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
+                 "ud-2.0-baselinemodel-train-embeddings/" \
+                 "{}.skip.forms.50.vectors".format(lang)
+
+setup = Setup.build(train_path, embedding_path, proj)
 
 model = setup.model()
 
+# dev = list(load(dev_path))
+# write(dev, "./golds/{}-ud-dev.conllu".format(lang))
+dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
+
 for epoch in range(10):
     setup.train(model, verbose=2)
-    for sent in dev:
-        setup.parse(model, sent)
-    validate(dev)
-    write(dev, "./results/{}_valency_e{}.conllu".format(slot, epoch))
+    write([setup.parse(model, sent) for sent in dev],
+          "./results/{}-valency_binary-e{:0>2d}.conllu"
+          .format(lang, epoch))
