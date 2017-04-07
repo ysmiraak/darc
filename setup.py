@@ -107,7 +107,7 @@ class Setup(object):
               hidden_dropout=0.0,
               output_init='glorot_uniform',
               output_const=None,
-              activation='tanh',
+              activation='relu',
               optimizer='adamax'):
         """-> keras.models.Model"""
         num_node = 18
