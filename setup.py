@@ -98,7 +98,7 @@ class Setup(object):
     def model(self,
               upos_emb_dim=10,
               drel_emb_dim=15,
-              emb_init='uniform',
+              emb_init='truncated_normal',
               emb_const=unit_norm(),
               emb_dropout=0.0,
               hidden_units=200,
@@ -313,3 +313,26 @@ class Setup(object):
 # model = setup.model()
 # from keras.utils import plot_model
 # plot_model(model, to_file=".tmp/model.png")
+
+
+def parse(setup, model, sent):
+    """-> Sent"""
+    config = Config(sent)
+    while not config.is_terminal():
+        if 2 > len(config.stack):
+            config.shift()
+            continue
+        prob = model.predict(setup.feature(config), 1).ravel()
+        good = False
+        for i, r in enumerate(prob.argsort()[::-1]):
+            act, arg = setup.idx2tran[r]
+            if config.doable(act):
+                print("{}\t{}\t{:.4f}".format(i, act, prob[r]))
+                getattr(config, act)(arg)
+                good = True
+                break
+        if not good:
+            print("WARNING!!!! FAILED TO PARSE:",
+                  " ".join([w.form for w in sent]))
+            break
+    return config.finish()

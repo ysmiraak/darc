@@ -2,21 +2,23 @@
 
 - on embeddings
 
+- max-norm
+
 - on hidden nodes and optimize hidden units
+
+- more layers
 
 * architecture
 
 - pretrained upos embedding
 
-- valency feature, again
+- pretrained lemma embedding
 
 - consider iterative parsing
 
 - consider beam search
 
 - consider structured perceptron
-
-- consider lemma instead of form
 
 * silver training data
 * troubles
@@ -61,4 +63,3 @@ and maybe pretrain postag embeddings.
 ** check if udpipe doesn't handle multiwords
 
 ** surprise languages
-
