@@ -1,24 +1,22 @@
-from itertools import repeat
+from itertools import repeat, islice
 from transition import Config, Oracle
 from conllu import Sent, load
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
-
-# from keras import regularizers as reg
-# from keras import initializers as init
-# from keras import constraints as const
+from keras.constraints import unit_norm  # , max_norm
 
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = 'form2idx', 'upos2idx', 'feat2idx', 'idx2tran', \
+    __slots__ = 'form2idx', 'upos2idx', 'drel2idx', 'feat2idx', 'idx2tran', \
                 'form_emb', 'x', 'y'
 
     dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
     dumb_upos, root_upos, obsc_upos = Sent.dumb[3], "ROOT", "_"
-    dumb_feat, root_feat, obsc_feat = Sent.dumb[5], "Root=Yes", "_"
+    dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
+    dumb_drel = Sent.dumb[7]
 
     def __init__(self, sents, w2v, proj=False):
         super().__init__()
@@ -30,15 +28,14 @@ class Setup(object):
         for form in specials:
             if form not in w2v.vocab:
                 pad += 1
-        form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
-        form_emb[:len(w2v.index2word)] = w2v.syn0
-        form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
+        self.form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
+        self.form_emb[:len(w2v.index2word)] = w2v.syn0
+        self.form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
+        del w2v
         for form in specials:
-            if form not in form2idx:
-                form2idx[form] = len(form2idx)
-        self.form_emb = form_emb
-        self.form2idx = form2idx
-        # upos2idx feat2idx idx2tran
+            if form not in self.form2idx:
+                self.form2idx[form] = len(self.form2idx)
+        # upos2idx feat2idx drel2idx idx2tran
         upos2idx = {self.dumb_upos: 0, self.root_upos: 1, self.obsc_upos: 2}
         feat2idx = {self.dumb_feat: 0, self.root_feat: 1}
         rels = set()
@@ -56,6 +53,8 @@ class Setup(object):
                         feat2idx[feat] = len(feat2idx)
         self.upos2idx = upos2idx
         self.feat2idx = feat2idx
+        self.drel2idx = {rel: idx for idx, rel in enumerate(rels)}
+        self.drel2idx[self.dumb_drel] = len(self.drel2idx)
         self.idx2tran = [('shift', None)]
         self.idx2tran.extend(('right', rel) for rel in rels)
         self.idx2tran.extend(('left', rel) for rel in rels)
@@ -67,8 +66,8 @@ class Setup(object):
             hotv = np.zeros(len(self.idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        data = [], [], [], []
-        tran_append, form_append, upos_append, feat_append \
+        data = [], [], [], [], []
+        tran_append, form_append, upos_append, drel_append, feat_append \
             = [d.append for d in data]
         for sent in sents:
             oracle = Oracle(sent, proj=proj)
@@ -82,7 +81,8 @@ class Setup(object):
                 tran_append(tran2idx[tran])
                 form_append(feat[0])
                 upos_append(feat[1])
-                feat_append(feat[2])
+                drel_append(feat[2])
+                feat_append(feat[3])
                 getattr(config, tran[0])(tran[1])
         self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
@@ -96,51 +96,59 @@ class Setup(object):
             proj=projective)
 
     def model(self,
-              form_emb_reg=None,
-              form_emb_const='unit_norm',
               upos_emb_dim=10,
-              upos_emb_reg=None,
-              upos_emb_const='unit_norm',
-              inputs_dropout=0.0,
+              drel_emb_dim=15,
+              emb_init='uniform',
+              emb_const=unit_norm(),
+              emb_dropout=0.0,
               hidden_units=200,
-              hidden_reg=None,
+              hidden_init='glorot_uniform',
               hidden_const=None,
               hidden_dropout=0.0,
-              output_reg=None,
+              output_init='glorot_uniform',
               output_const=None,
+              activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
         num_node = 18
         form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
         upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
+        drel = Input(name="drel", shape=(num_node - 2, ), dtype=np.uint8)
         feat = Input(name="feat", shape=(num_node * len(self.feat2idx), ))
-        i = [form, upos, feat]
+        i = [form, upos, drel, feat]
         form = Embedding(
             input_dim=len(self.form2idx),
             input_length=num_node,
             output_dim=50,
             embeddings_initializer='zeros',
-            embeddings_regularizer=form_emb_reg,
-            embeddings_constraint=form_emb_const,
+            embeddings_constraint=emb_const,
             name="form_emb")(form)
         upos = Embedding(
             input_dim=len(self.upos2idx),
             input_length=num_node,
             output_dim=upos_emb_dim,
-            embeddings_initializer='uniform',
-            embeddings_regularizer=upos_emb_reg,
-            embeddings_constraint=upos_emb_const,
+            embeddings_initializer=emb_init,
+            embeddings_constraint=emb_const,
             name="upos_emb")(upos)
+        drel = Embedding(
+            input_dim=len(self.drel2idx),
+            input_length=num_node - 2,
+            output_dim=drel_emb_dim,
+            embeddings_initializer=emb_init,
+            embeddings_constraint=emb_const,
+            name="drel_emb")(drel)
         form = Flatten(name="form_flat")(form)
         upos = Flatten(name="upos_flat")(upos)
-        o = Concatenate(name="inputs")([form, upos, feat])
-        if inputs_dropout:
-            o = Dropout(name="inputs_dropout", rate=inputs_dropout)(o)
+        drel = Flatten(name="drel_flat")(drel)
+        if emb_dropout:
+            form = Dropout(name="form_dropout", rate=emb_dropout)(form)
+            upos = Dropout(name="upos_dropout", rate=emb_dropout)(upos)
+            drel = Dropout(name="drel_dropout", rate=emb_dropout)(drel)
+        o = Concatenate(name="inputs")([form, upos, drel, feat])
         o = Dense(
             units=hidden_units,
-            activation='tanh',
-            kernel_initializer='glorot_uniform',
-            kernel_regularizer=hidden_reg,
+            activation=activation,
+            kernel_initializer=hidden_init,
             kernel_constraint=hidden_const,
             name="hidden")(o)
         if hidden_dropout:
@@ -148,8 +156,7 @@ class Setup(object):
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer='glorot_uniform',
-            kernel_regularizer=output_reg,
+            kernel_initializer=output_init,
             kernel_constraint=output_const,
             name="output")(o)
         m = Model(i, o, name="darc")
@@ -192,9 +199,11 @@ class Setup(object):
         return config.finish()
 
     def feature(self, config):
-        """Config -> [numpy.ndarray] :as form, upos, feat
+        """Config -> [numpy.ndarray] :as form, upos, drel, feat
 
         assert form.shape == upos.shape == (18, )
+
+        assert drel.shape == (16, )
 
         assert feat.shape == (18 * len(self.feat2idx), )
 
@@ -205,7 +214,7 @@ class Setup(object):
         #  6: s0l0     7: s1l0     8: s0r0     9: s1r0
         # 10: s0l0l1  11: s1l0l1  12: s0r0r1  13: s1r0r1
         # 14: s2      15: i0      16: i1      17: i2
-        sent, i, s, g = config.sent, config.input, config.stack, config.graph
+        i, s, g = config.input, config.stack, config.graph
         x = list(repeat(0, num_node))  # node 0 in each sent is dumb
         if 1 <= len(s):
             x[0] = s[-1]  # s0
@@ -245,37 +254,41 @@ class Setup(object):
                 x[16] = i[-2]  # i1
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
-        form = [sent.form[i] for i in x]
-        upos = [sent.upostag[i] for i in x]
-        feat = [sent.feats[i] for i in x]
+        # form upos
+        form2idx = self.form2idx.get
+        upos2idx = self.upos2idx.get
+        form_unk = form2idx(self.obsc_form)
+        upos_unk = upos2idx(self.obsc_upos)
+        form = config.sent.form
+        upos = config.sent.upostag
+        form = np.fromiter((form2idx(form[i], form_unk) for i in x), np.uint16)
+        upos = np.fromiter((upos2idx(upos[i], upos_unk) for i in x), np.uint8)
+        # drel
+        drel2idx = self.drel2idx
+        drel = config.deprel
+        drel = np.fromiter((drel2idx[drel[i]]
+                            for i in islice(x, 2, None)), np.uint8)
+        # feats
+        feats = config.sent.feats
+        feats = [feats[i] for i in x]
         # special treatments for root
         if 2 <= len(s) and 0 == s[-2]:
             # s1 at idx 1 is root
-            form[1] = self.root_form
-            upos[1] = self.root_upos
-            feat[1] = self.root_feat
-        # locals for faster access
-        form2idx = self.form2idx
-        upos2idx = self.upos2idx
-        feat2idx = self.feat2idx
-        obsc_form = form2idx[self.obsc_form]
-        obsc_upos = upos2idx[self.obsc_upos]
+            form[1] = form2idx(self.root_form)
+            upos[1] = upos2idx(self.root_upos)
+            feats[1] = self.root_feat
         # set-valued feat (Alberti et al. 2015)
+        feat2idx = self.feat2idx
         num_feat = len(feat2idx)
-        feat_vec = np.zeros(num_node * num_feat, np.float32)
-        for idx, feats in enumerate(feat):
-            for feat in feats.split("|"):
+        feat = np.zeros(num_node * num_feat, np.float32)
+        for idx, fts in enumerate(feats):
+            for ft in fts.split("|"):
                 try:
-                    feat_vec[num_feat * idx + feat2idx[feat]] = 1.0
+                    feat[num_feat * idx + feat2idx[ft]] = 1.0
                 except KeyError:
                     pass
-        return [
-            np.fromiter((form2idx.get(x, obsc_form)
-                         for x in form), np.uint16).reshape(1, -1),
-            np.fromiter((upos2idx.get(x, obsc_upos)
-                         for x in upos), np.uint8).reshape(1, -1),
-            feat_vec.reshape(1, -1),
-        ]  # model.predict takes list not tuple
+        form.shape = upos.shape = drel.shape = feat.shape = 1, -1
+        return [form, upos, drel, feat]  # model.predict takes list
 
     def save(self, file):
         """as npy file"""

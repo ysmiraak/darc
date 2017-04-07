@@ -28,19 +28,19 @@ embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
 setup = Setup.build(train_path, embedding_path, proj)
 
 model = setup.model(
-    # form_emb_reg=None,
-    # form_emb_const='unit_norm',
     # upos_emb_dim=10,
-    # upos_emb_reg=None,
-    # upos_emb_const='unit_norm',
-    # inputs_dropout=0.0,
+    # drel_emb_dim=15,
+    # emb_init='uniform',
+    # emb_const=unit_norm(),
+    # emb_dropout=0.0,
     # hidden_units=200,
-    # hidden_reg=None,
+    # hidden_init='glorot_uniform',
     # hidden_const=None,
     # hidden_dropout=0.0,
-    # output_reg=None,
+    # output_init='glorot_uniform',
     # output_const=None,
-    # optimizer='adamax'
+    # activation='tanh',
+    # optimizer='adamax',
 )
 
 # dev = list(load(dev_path))

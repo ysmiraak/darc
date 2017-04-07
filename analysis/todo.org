@@ -1,21 +1,3 @@
-* architecture
-
-- try label feature
-
-- pretrained upos embedding
-
-- propose structure for feat embedding
-
-- valency feature, again
-
-- consider beam search
-
-- consider structured perceptron
-
-- consider lemma instead of form
-
-- consider integrated word+pos+morph embedding
-
 * parameter
 
 - try relu activation
@@ -24,9 +6,23 @@
 
 + optimize hidden units
 
-* regularization
+* dropout
 
-+ try dropout
+- on embeddings
+
+- on hidden nodes
+
+* architecture
+
+- pretrained upos embedding
+
+- valency feature, again
+
+- consider beam search
+
+- consider structured perceptron
+
+- consider lemma instead of form
 
 * troubles
 
