@@ -30,7 +30,10 @@ def sent(lines):
             args[6] = int(args[6])
         except ValueError:
             pass
-        # args[7] = args[7].split(":")[0]  # acl:relcl -> acl
+        try:  # acl:relcl -> acl
+            args[7] = args[7][:args[7].index(":")]
+        except ValueError:
+            pass
         for col, val in zip(cols, args):
             col.append(val)
     return Sent(multi, *cols)
@@ -61,7 +64,7 @@ def write(sents, file):
             w, m = 1, 0
             while w < len(sent.id):
                 if m < len(multi_idx) and w == multi_idx[m]:
-                    file.write("\t".join([str(x) for x in sent.multi[m]]))
+                    file.write(sent.multi[m])
                     file.write("\n")
                     m += 1
                 else:

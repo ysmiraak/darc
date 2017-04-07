@@ -189,6 +189,25 @@ fa
 
 glorot-uniform
 
+* try with full deprel
+
+fa
+
+| 75.97 71.84 |
+| 80.82 76.86 |
+| 81.22 77.22 |
+| 82.29 78.24 |
+| 81.95 77.90 |
+| 82.84 79.00 |
+| 84.04 80.25 |
+| 81.87 77.99 |
+| 83.74 79.96 |
+| 82.55 78.16 |
+
+** conclusion
+
+seems to make learning harder. try later with dropout.
+
 * optimize output initializer
 
 fa
@@ -206,13 +225,3 @@ fa
 ** conclusion
 
 ????
-
-
-
-
-
-
-
-
-
-

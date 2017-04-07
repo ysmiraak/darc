@@ -8,6 +8,8 @@
 
 - more layers
 
+- with full deprel
+
 * architecture
 
 - pretrained upos embedding
@@ -20,7 +22,7 @@
 
 - consider structured perceptron
 
-* silver training data
+* silver training
 * troubles
 
 ** single root
