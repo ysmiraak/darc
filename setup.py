@@ -18,26 +18,29 @@ class Setup(object):
     dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
     dumb_drel = Sent.dumb[7]
 
-    def __init__(self, sents, w2v, proj=False):
+    def __init__(self, **kwargs):
         super().__init__()
-        if not sents:
-            return
+        for attr, val in kwargs.items():
+            setattr(self, attr, val)
+
+    @staticmethod
+    def cons(sents, w2v, proj=False):
         # form_emb form2idx
-        specials = self.dumb_form, self.root_form, self.obsc_form
+        specials = Setup.dumb_form, Setup.root_form, Setup.obsc_form
         pad = 0
         for form in specials:
             if form not in w2v.vocab:
                 pad += 1
-        self.form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
-        self.form_emb[:len(w2v.index2word)] = w2v.syn0
-        self.form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
+        form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
+        form_emb[:len(w2v.index2word)] = w2v.syn0
+        form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
         del w2v
         for form in specials:
-            if form not in self.form2idx:
-                self.form2idx[form] = len(self.form2idx)
+            if form not in form2idx:
+                form2idx[form] = len(form2idx)
         # upos2idx feat2idx drel2idx idx2tran
-        upos2idx = {self.dumb_upos: 0, self.root_upos: 1, self.obsc_upos: 2}
-        feat2idx = {self.dumb_feat: 0, self.root_feat: 1}
+        upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1, Setup.obsc_upos: 2}
+        feat2idx = {Setup.dumb_feat: 0, Setup.root_feat: 1}
         rels = set()
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -51,27 +54,32 @@ class Setup(object):
                 for feat in feats.split("|"):
                     if feat not in feat2idx:
                         feat2idx[feat] = len(feat2idx)
-        self.upos2idx = upos2idx
-        self.feat2idx = feat2idx
-        self.drel2idx = {rel: idx for idx, rel in enumerate(rels)}
-        self.drel2idx[self.dumb_drel] = len(self.drel2idx)
-        self.idx2tran = [('shift', None)]
-        self.idx2tran.extend(('right', rel) for rel in rels)
-        self.idx2tran.extend(('left', rel) for rel in rels)
+        drel2idx = {rel: idx for idx, rel in enumerate(rels)}
+        drel2idx[Setup.dumb_drel] = len(drel2idx)
+        idx2tran = [('shift', None)]
+        idx2tran.extend(('right', rel) for rel in rels)
+        idx2tran.extend(('left', rel) for rel in rels)
         if not proj:
-            self.idx2tran.append(('swap', None))
+            idx2tran.append(('swap', None))
         # x y
+        self = Setup(
+            form2idx=form2idx,
+            form_emb=form_emb,
+            upos2idx=upos2idx,
+            drel2idx=drel2idx,
+            feat2idx=feat2idx,
+            idx2tran=idx2tran)
         tran2idx = {}
-        for idx, tran in enumerate(self.idx2tran):
-            hotv = np.zeros(len(self.idx2tran), np.float32)
+        for idx, tran in enumerate(idx2tran):
+            hotv = np.zeros(len(idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
         data = [], [], [], [], []
         tran_append, form_append, upos_append, drel_append, feat_append \
             = [d.append for d in data]
         for sent in sents:
-            oracle = Oracle(sent, proj=proj)
-            config = Config(sent)
+            oracle = Oracle.cons(sent, proj=proj)
+            config = Config.cons(sent)
             while not config.is_terminal():
                 tran = oracle.predict(config)
                 if not config.doable(tran[0]):
@@ -86,14 +94,15 @@ class Setup(object):
                 getattr(config, tran[0])(tran[1])
         self.y = np.array(data[0], np.float32)
         self.x = [np.concatenate(d) for d in data[1:]]
+        return self
 
     @staticmethod
-    def build(train_conllu, embedding_txt, projective=False):
-        """-> Setup; build from files"""
-        return Setup(
+    def make(train_conllu, embedding_txt, proj=False):
+        """-> Setup; from files"""
+        return Setup.cons(
             load(train_conllu),
             KeyedVectors.load_word2vec_format(embedding_txt),
-            proj=projective)
+            proj=proj)
 
     def model(self,
               upos_emb_dim=10,
@@ -176,20 +185,18 @@ class Setup(object):
 
     def parse(self, model, sent):
         """-> Sent"""
-        config = Config(sent)
+        config = Config.cons(sent)
         while not config.is_terminal():
             if 2 > len(config.stack):
                 config.shift()
                 continue
             prob = model.predict(self.feature(config), 1).ravel()
-            good = False
             for r in prob.argsort()[::-1]:
                 act, arg = self.idx2tran[r]
                 if config.doable(act):
                     getattr(config, act)(arg)
-                    good = True
                     break
-            if not good:
+            else:
                 print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
                 break
         return config.finish()
@@ -293,18 +300,14 @@ class Setup(object):
     @staticmethod
     def load(file):
         """-> Setup"""
-        setup = Setup(None, None)
-        data = np.load(file).item()
-        for a in Setup.__slots__:
-            setattr(setup, a, data[a])
-        return setup
+        return Setup(np.load(file).item())
 
 
 # ud_path = "/data/ud-treebanks-conll2017/"
 # wv_path = ("/data/udpipe-ud-2.0-conll17-170315-supplementary-data/"
 #            "ud-2.0-baselinemodel-train-embeddings/")
-# setup = Setup.build(ud_path + "UD_Kazakh/kk-ud-train.conllu",
-#                     wv_path + "kk.skip.forms.50.vectors")
+# setup = Setup.make(ud_path + "UD_Kazakh/kk-ud-train.conllu",
+#                    wv_path + "kk.skip.forms.50.vectors")
 
 # model = setup.model()
 # from keras.utils import plot_model
@@ -313,21 +316,19 @@ class Setup(object):
 
 def parse(setup, model, sent):
     """-> Sent"""
-    config = Config(sent)
+    config = Config.cons(sent)
     while not config.is_terminal():
         if 2 > len(config.stack):
             config.shift()
             continue
         prob = model.predict(setup.feature(config), 1).ravel()
-        good = False
         for i, r in enumerate(prob.argsort()[::-1]):
             act, arg = setup.idx2tran[r]
             if config.doable(act):
                 print("{}\t{}\t{:.4f}".format(i, act, prob[r]))
                 getattr(config, act)(arg)
-                good = True
                 break
-        if not good:
+        else:
             print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
             break
     return config.finish()

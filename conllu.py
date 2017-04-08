@@ -13,7 +13,7 @@ del cols
 Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
 
 
-def build(lines):
+def cons(lines):
     """[str] -> Sent"""
     multi = []
     nodes = [Sent.dumb]
@@ -25,21 +25,21 @@ def build(lines):
         except ValueError:
             if "-" in node[0]:
                 multi.append(line)
-                continue
-        try:  # head might be empty for interim results
-            node[6] = int(node[6])
-        except ValueError:
-            pass
-        try:  # acl:relcl -> acl
-            node[7] = node[7][:node[7].index(":")]
-        except ValueError:
-            pass
-        nodes.append(node)
+        else:
+            try:  # head might be empty for interim results
+                node[6] = int(node[6])
+            except ValueError:
+                pass
+            try:  # acl:relcl -> acl
+                node[7] = node[7][:node[7].index(":")]
+            except ValueError:
+                pass
+            nodes.append(node)
     return Sent(tuple(multi), *zip(*nodes))
 
 
-Sent.build = build
-del build
+Sent.cons = cons
+del cons
 
 
 def load(file):
@@ -53,13 +53,13 @@ def load(file):
             elif line:
                 sent.append(line)
             elif sent:
-                yield Sent.build(sent)
+                yield Sent.cons(sent)
                 sent = []
         if sent:
-            yield Sent.build(sent)
+            yield Sent.cons(sent)
 
 
-def write(sents, file):
+def save(sents, file):
     """sents: [Sent]"""
     with open(file, 'w', encoding='utf-8') as file:
         for sent in sents:
@@ -79,6 +79,6 @@ def write(sents, file):
 
 
 # sents = list(load("/data/ud-treebanks-conll2017/UD_German/de-ud-dev.conllu"))
-# write(sents, ".tmp/tmp.conllu")
+# save(sents, ".tmp/tmp.conllu")
 # sents2 = list(load(".tmp/tmp.conllu"))
 # assert sents == sents2

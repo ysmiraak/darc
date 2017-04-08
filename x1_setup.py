@@ -24,8 +24,8 @@ embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
                  "ud-2.0-baselinemodel-train-embeddings/" \
                  "{}.skip.forms.50.vectors".format(lang)
 
-Setup.build(train_path, embedding_path, proj) \
+Setup.make(train_path, embedding_path, proj) \
      .save("./setups/{}-{}.npy" .format(lang, 'proj' if proj else 'nonp'))
 
-# from conllu import load, write
-# write(load(dev_path), "./golds/{}-ud-dev.conllu".format(lang))
+# from conllu import load, save
+# save(load(dev_path), "./golds/{}-ud-dev.conllu".format(lang))
