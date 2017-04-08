@@ -102,11 +102,10 @@ class Setup(object):
               emb_const=unit_norm(),
               emb_dropout=0.0,
               hidden_units=200,
-              hidden_init='glorot_uniform',
               hidden_const=None,
               hidden_dropout=0.0,
-              output_init='glorot_uniform',
               output_const=None,
+              init='glorot_uniform',
               activation='relu',
               optimizer='adamax'):
         """-> keras.models.Model"""
@@ -120,7 +119,7 @@ class Setup(object):
             input_dim=len(self.form2idx),
             input_length=num_node,
             output_dim=50,
-            embeddings_initializer='zeros',
+            weights=[self.form_emb],
             embeddings_constraint=emb_const,
             name="form_emb")(form)
         upos = Embedding(
@@ -148,7 +147,7 @@ class Setup(object):
         o = Dense(
             units=hidden_units,
             activation=activation,
-            kernel_initializer=hidden_init,
+            kernel_initializer=init,
             kernel_constraint=hidden_const,
             name="hidden")(o)
         if hidden_dropout:
@@ -156,7 +155,7 @@ class Setup(object):
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer=output_init,
+            kernel_initializer=init,
             kernel_constraint=output_const,
             name="output")(o)
         m = Model(i, o, name="darc")
@@ -164,8 +163,6 @@ class Setup(object):
             optimizer=optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'])
-        # use pretrained form embeddings
-        m.get_layer("form_emb").set_weights([self.form_emb])
         # obsc_upos embedding will never be trained, set to zero
         # TODO: use pretrained upos embeddings
         w = m.get_layer("upos_emb").get_weights()

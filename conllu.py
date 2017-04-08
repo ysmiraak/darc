@@ -7,13 +7,13 @@ Sent = namedtuple('Sent', ('multi', ) + cols)
 Sent.cols = cols
 del cols
 
-Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
 # id=0 serves as root; form="", upostag="", feats="" used by setup as sentinel
 # for missing nodes; head=0, deprel="_" used by transition as default for
-# consistency; the others are not used.
+# consistency; the others serve no purpose.
+Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
 
 
-def sent(lines):
+def build(lines):
     """[str] -> Sent"""
     multi = []
     cols = [[x] for x in Sent.dumb]
@@ -39,21 +39,25 @@ def sent(lines):
     return Sent(multi, *cols)
 
 
+Sent.build = build
+del build
+
+
 def load(file):
     """-> iter([Sent])"""
     with open(file, encoding='utf-8') as file:
-        lines = []
+        sent = []
         for line in file:
             line = line.strip()
             if line.startswith("#"):
                 pass
             elif line:
-                lines.append(line)
-            elif lines:
-                yield sent(lines)
-                lines = []
-        if lines:
-            yield sent(lines)
+                sent.append(line)
+            elif sent:
+                yield Sent.build(sent)
+                sent = []
+        if sent:
+            yield Sent.build(sent)
 
 
 def write(sents, file):
