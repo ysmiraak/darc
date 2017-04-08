@@ -5,7 +5,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
-from keras.constraints import unit_norm  # , max_norm
+# from keras.constraints import max_norm
 
 
 class Setup(object):
@@ -105,10 +105,10 @@ class Setup(object):
             proj=proj)
 
     def model(self,
-              upos_emb_dim=10,
-              drel_emb_dim=15,
+              upos_emb_dim=12,
+              drel_emb_dim=16,
               emb_init='truncated_normal',
-              emb_const=unit_norm(),
+              emb_const='unit_norm',
               emb_dropout=0.0,
               hidden_units=200,
               hidden_const=None,

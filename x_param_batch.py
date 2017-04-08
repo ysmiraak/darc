@@ -15,8 +15,9 @@ model = setup.model()
 
 dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
 
-for epoch in range(10):
-    setup.train(model, verbose=2)
-    save([setup.parse(model, sent) for sent in dev],
-         "./results/{}-e{:0>2d}.conllu"
-         .format(lang, epoch))
+for batch_size in 6, 18, 32, 64:
+    for epoch in range(10):
+        setup.train(model, verbose=2, batch_size=batch_size)
+        save([setup.parse(model, sent) for sent in dev],
+             "./results/{}-batch_{}-e{:0>2d}.conllu"
+             .format(lang, batch_size, epoch))
