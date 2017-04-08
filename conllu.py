@@ -16,27 +16,26 @@ Sent.dumb = 0, "", None, "", None, "", 0, "_", None, None
 def build(lines):
     """[str] -> Sent"""
     multi = []
-    cols = [[x] for x in Sent.dumb]
+    nodes = [Sent.dumb]
     for line in lines:
-        args = line.split("\t")
-        assert 10 == len(args)
+        node = line.split("\t")
+        assert 10 == len(node)
         try:
-            args[0] = int(args[0])
+            node[0] = int(node[0])
         except ValueError:
-            if "-" in args[0]:
+            if "-" in node[0]:
                 multi.append(line)
                 continue
         try:  # head might be empty for interim results
-            args[6] = int(args[6])
+            node[6] = int(node[6])
         except ValueError:
             pass
         try:  # acl:relcl -> acl
-            args[7] = args[7][:args[7].index(":")]
+            node[7] = node[7][:node[7].index(":")]
         except ValueError:
             pass
-        for col, val in zip(cols, args):
-            col.append(val)
-    return Sent(multi, *cols)
+        nodes.append(node)
+    return Sent(tuple(multi), *zip(*nodes))
 
 
 Sent.build = build

@@ -190,8 +190,7 @@ class Setup(object):
                     good = True
                     break
             if not good:
-                print("WARNING!!!! FAILED TO PARSE:",
-                      " ".join([w.form for w in sent]))
+                print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
                 break
         return config.finish()
 
@@ -329,7 +328,6 @@ def parse(setup, model, sent):
                 good = True
                 break
         if not good:
-            print("WARNING!!!! FAILED TO PARSE:",
-                  " ".join([w.form for w in sent]))
+            print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
             break
     return config.finish()

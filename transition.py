@@ -60,7 +60,7 @@ class Config(object):
     def finish(self):
         """-> Sent"""
         head = list(repeat(0, len(self.graph)))
-        deprel = self.deprel
+        # deprel = self.deprel
         for h, ds in enumerate(self.graph):
             for d in ds:
                 head[d] = h
@@ -68,7 +68,7 @@ class Config(object):
             #     deprel[h] = deprel[h][:deprel[h].index(":")]
             # except ValueError:
             #     pass
-        return self.sent._replace(head=head, deprel=deprel)
+        return self.sent._replace(head=tuple(head), deprel=tuple(self.deprel))
 
 
 class Oracle(object):
