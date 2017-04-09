@@ -300,7 +300,7 @@ class Setup(object):
     @staticmethod
     def load(file):
         """-> Setup"""
-        return Setup(np.load(file).item())
+        return Setup(**np.load(file).item())
 
 
 # ud_path = "/data/ud-treebanks-conll2017/"

@@ -11,10 +11,9 @@ setup = Setup.load("./setups/fa-nonp.npy")
 # lang = "zh"
 # setup = Setup.load("./setups/zh-proj.npy")
 
-model = setup.model()
-
 dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
 
+model = setup.model()
 for epoch in range(10):
     setup.train(model, verbose=2)
     save([setup.parse(model, sent) for sent in dev],

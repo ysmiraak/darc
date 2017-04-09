@@ -27,12 +27,11 @@ embedding_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
 
 setup = Setup.make(train_path, embedding_path, proj)
 
-model = setup.model()
-
 # dev = list(load(dev_path))
 # save(dev, "./golds/{}-ud-dev.conllu".format(lang))
 dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
 
+model = setup.model()
 for epoch in range(10):
     setup.train(model, verbose=2)
     save([setup.parse(model, sent) for sent in dev],
