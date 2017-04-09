@@ -31,7 +31,6 @@ class Config(object):
             return 0 != len(self.input)
         elif 'right' == act:
             return 2 <= len(self.stack)
-        # and (0 != self.stack[-2] or not self.graph[0])
         elif 'left' == act:
             return 2 <= len(self.stack) and 0 != self.stack[-2]
         elif 'swap' == act:

@@ -41,24 +41,24 @@ class Setup(object):
         # upos2idx feat2idx drel2idx idx2tran
         upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1, Setup.obsc_upos: 2}
         feat2idx = {Setup.dumb_feat: 0, Setup.root_feat: 1}
-        rels = set()
+        drel2idx = {}
+        idx2tran = [('shift', None)]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
         for sent in sents:
-            it = zip(sent.deprel, sent.upostag, sent.feats)
+            it = zip(sent.upostag, sent.feats, sent.deprel)
             next(it)
-            for rel, upos, feats in it:
-                rels.add(rel)
+            for upos, feats, drel in it:
                 if upos not in upos2idx:
                     upos2idx[upos] = len(upos2idx)
                 for feat in feats.split("|"):
                     if feat not in feat2idx:
                         feat2idx[feat] = len(feat2idx)
-        drel2idx = {rel: idx for idx, rel in enumerate(rels)}
+                if drel not in drel2idx:
+                    drel2idx[drel] = len(drel2idx)
+                    idx2tran.append(('left', drel))
+                    idx2tran.append(('right', drel))
         drel2idx[Setup.dumb_drel] = len(drel2idx)
-        idx2tran = [('shift', None)]
-        idx2tran.extend(('right', rel) for rel in rels)
-        idx2tran.extend(('left', rel) for rel in rels)
         if not proj:
             idx2tran.append(('swap', None))
         # x y
