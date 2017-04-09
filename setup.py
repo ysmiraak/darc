@@ -107,15 +107,14 @@ class Setup(object):
     def model(self,
               upos_emb_dim=12,
               drel_emb_dim=16,
-              emb_init='truncated_normal',
-              emb_const='unit_norm',
-              emb_dropout=0.0,
               hidden_units=200,
-              hidden_const=None,
-              hidden_dropout=0.0,
-              output_const=None,
-              init='glorot_uniform',
-              activation='relu',
+              emb_init='truncated_normal',
+              dense_init='orthogonal',
+              emb_const='unit_norm',
+              dense_const=None,
+              emb_dropout=0.0,
+              dense_dropout=0.0,
+              activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
         num_node = 18
@@ -156,22 +155,19 @@ class Setup(object):
         o = Dense(
             units=hidden_units,
             activation=activation,
-            kernel_initializer=init,
-            kernel_constraint=hidden_const,
+            kernel_initializer=dense_init,
+            kernel_constraint=dense_const,
             name="hidden")(o)
-        if hidden_dropout:
-            o = Dropout(name="hidden_dropout", rate=hidden_dropout)(o)
+        if dense_dropout:
+            o = Dropout(name="hidden_dropout", rate=dense_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer=init,
-            kernel_constraint=output_const,
+            kernel_initializer=dense_init,
+            kernel_constraint=dense_const,
             name="output")(o)
         m = Model(i, o, name="darc")
-        m.compile(
-            optimizer=optimizer,
-            loss='categorical_crossentropy',
-            metrics=['accuracy'])
+        m.compile(optimizer, 'categorical_crossentropy')
         # obsc_upos embedding will never be trained, set to zero
         # TODO: use pretrained upos embeddings
         w = m.get_layer("upos_emb").get_weights()
