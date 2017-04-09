@@ -5,8 +5,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
-
-# from keras.constraints import max_norm
+from keras.constraints import max_norm
 
 
 class Setup(object):
@@ -119,6 +118,18 @@ class Setup(object):
               activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
+        try:
+            float(emb_const)
+        except (TypeError, ValueError):
+            pass
+        else:
+            emb_const = max_norm(emb_const)
+        try:
+            float(dense_const)
+        except (TypeError, ValueError):
+            pass
+        else:
+            dense_const = max_norm(dense_const)
         num_node = 18
         form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
         upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
