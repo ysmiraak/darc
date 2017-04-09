@@ -13,6 +13,7 @@ class Config(object):
 
     @staticmethod
     def cons(sent):
+        """"Sent -> Config"""
         n = len(sent.head)
         return Config(
             sent=sent,
@@ -42,7 +43,7 @@ class Config(object):
         """(σ, [i|β], A) ⇒ ([σ|i], β, A)"""
         self.stack.append(self.input.pop())
 
-    def right(self, deprel=None):
+    def right(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|i], B, A∪{(i, l, j)})"""
         j = self.stack.pop()
         i = self.stack[-1]
@@ -50,7 +51,7 @@ class Config(object):
         # i -deprel-> j
         self.deprel[j] = deprel
 
-    def left(self, deprel=None):
+    def left(self, deprel):
         """([σ|i, j], B, A) ⇒ ([σ|j], B, A∪{(j, l, i)})"""
         j = self.stack[-1]
         i = self.stack.pop(-2)
@@ -89,6 +90,7 @@ class Oracle(object):
     __slots__ = 'sent', 'mode', 'graph', 'order', 'mpcrt'
 
     def cons(sent, proj=False, lazy=True):
+        """Sent -> Oracle"""
         self = Oracle()
         n = len(sent.head)
         self.sent = sent

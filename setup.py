@@ -5,6 +5,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
+
 # from keras.constraints import max_norm
 
 
@@ -25,6 +26,7 @@ class Setup(object):
 
     @staticmethod
     def cons(sents, w2v, proj=False):
+        """[Sent], gensim.models.keyedvectors.KeyedVectors -> Setup"""
         # form_emb form2idx
         specials = Setup.dumb_form, Setup.root_form, Setup.obsc_form
         pad = 0
@@ -198,7 +200,7 @@ class Setup(object):
         return config.finish()
 
     def feature(self, config):
-        """Config -> [numpy.ndarray] :as form, upos, drel, feat
+        """-> [numpy.ndarray] :as form, upos, drel, feat
 
         assert form.shape == upos.shape == (18, )
 
@@ -289,9 +291,12 @@ class Setup(object):
         form.shape = upos.shape = drel.shape = feat.shape = 1, -1
         return [form, upos, drel, feat]  # model.predict takes list
 
-    def save(self, file):
+    def save(self, file, with_data=True):
         """as npy file"""
-        np.save(file, {a: getattr(self, a) for a in Setup.__slots__})
+        np.save(file, {
+            a: getattr(self, a)
+            for a in (Setup.__slots__ if with_data else Setup.__slots__[:-3])
+        })
 
     @staticmethod
     def load(file):
