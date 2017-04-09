@@ -109,7 +109,7 @@ class Setup(object):
               upos_emb_dim=12,
               drel_emb_dim=16,
               hidden_units=200,
-              emb_init='truncated_normal',
+              emb_init='uniform',
               dense_init='orthogonal',
               emb_const='unit_norm',
               dense_const=None,
@@ -298,10 +298,8 @@ class Setup(object):
 
     def save(self, file, with_data=True):
         """as npy file"""
-        np.save(file, {
-            a: getattr(self, a)
-            for a in (Setup.__slots__ if with_data else Setup.__slots__[:-3])
-        })
+        attrs = Setup.__slots__ if with_data else Setup.__slots__[:-3]
+        np.save(file, {attr: getattr(self, attr) for attr in attrs})
 
     @staticmethod
     def load(file):

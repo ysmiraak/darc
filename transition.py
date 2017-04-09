@@ -213,7 +213,7 @@ class Oracle(object):
 # from glob import glob
 # for file in glob("/data/ud-treebanks-conll2017/*/*.conllu"):
 #     print("testing oracle on", file, "...")
-#     for i,s in enumerate(load(file)):
+#     for i, s in enumerate(load(file)):
 #         try:
 #             test_oracle(s, False)
 #         except Exception:
