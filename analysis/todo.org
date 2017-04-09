@@ -20,8 +20,6 @@
 
 - consider beam search
 
-- consider structured perceptron
-
 * silver training
 * troubles
 
