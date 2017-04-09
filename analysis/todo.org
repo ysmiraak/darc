@@ -21,11 +21,6 @@ train embeddings on silver data
 
 * troubles
 
-** single root
-
-the evaluation script doesn't allow more than one nodes to be attached to root in
-one sentence. parataxis.
-
 ** retrain udpipe models
 
 for tokenizing, sent-splitting, lemmatizing, postagging, and morphtagging

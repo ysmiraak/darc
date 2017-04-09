@@ -1,4 +1,4 @@
-from itertools import repeat, islice
+from itertools import repeat
 from transition import Config, Oracle
 from conllu import Sent, load
 import numpy as np
@@ -14,7 +14,7 @@ class Setup(object):
                 'form_emb', 'x', 'y'
 
     dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
-    dumb_upos, root_upos, obsc_upos = Sent.dumb[3], "ROOT", "_"
+    dumb_upos, root_upos = Sent.dumb[3], "ROOT"
     dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
     dumb_drel = Sent.dumb[7]
 
@@ -40,7 +40,7 @@ class Setup(object):
             if form not in form2idx:
                 form2idx[form] = len(form2idx)
         # upos2idx feat2idx drel2idx idx2tran
-        upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1, Setup.obsc_upos: 2}
+        upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1}
         feat2idx = {Setup.dumb_feat: 0, Setup.root_feat: 1}
         drel2idx = {}
         idx2tran = [('shift', None)]
@@ -181,11 +181,6 @@ class Setup(object):
             name="output")(o)
         m = Model(i, o, name="darc")
         m.compile(optimizer, 'categorical_crossentropy')
-        # obsc_upos embedding will never be trained, set to zero
-        # TODO: use pretrained upos embeddings
-        w = m.get_layer("upos_emb").get_weights()
-        w[0][self.upos2idx[self.obsc_upos]] = 0.0
-        m.get_layer("upos_emb").set_weights(w)
         return m
 
     def train(self, model, *args, **kwargs):
@@ -270,7 +265,7 @@ class Setup(object):
         form2idx = self.form2idx.get
         upos2idx = self.upos2idx.get
         form_unk = form2idx(self.obsc_form)
-        upos_unk = upos2idx(self.obsc_upos)
+        upos_unk = upos2idx(self.dumb_upos)
         form = config.sent.form
         upos = config.sent.upostag
         form = np.fromiter((form2idx(form[i], form_unk) for i in x), np.uint16)
@@ -278,8 +273,7 @@ class Setup(object):
         # drel
         drel2idx = self.drel2idx
         drel = config.deprel
-        drel = np.fromiter((drel2idx[drel[i]]
-                            for i in islice(x, 2, None)), np.uint8)
+        drel = np.fromiter((drel2idx[drel[i]] for i in x[2:]), np.uint8)
         # feats
         feats = config.sent.feats
         feats = [feats[i] for i in x]

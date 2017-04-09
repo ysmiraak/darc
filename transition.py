@@ -1,4 +1,4 @@
-from itertools import repeat, islice
+from itertools import repeat
 from bisect import bisect_left, insort_right
 
 
@@ -65,16 +65,22 @@ class Config(object):
 
     def finish(self):
         """-> Sent"""
-        head = list(repeat(0, len(self.graph)))
-        # deprel = self.deprel
-        for h, ds in enumerate(self.graph):
+        graph = self.graph
+        deprel = self.deprel
+        if 1 < len(graph[0]):  # ensure single root
+            h = graph[0][0]
+            for d in graph[0][1:]:
+                insort_right(graph[h], d)
+                deprel[d] = 'parataxis'
+        head = list(repeat(0, len(graph)))
+        for h, ds in enumerate(graph):
             for d in ds:
                 head[d] = h
             # try:
             #     deprel[h] = deprel[h][:deprel[h].index(":")]
             # except ValueError:
             #     pass
-        return self.sent._replace(head=tuple(head), deprel=tuple(self.deprel))
+        return self.sent._replace(head=tuple(head), deprel=tuple(deprel))
 
 
 class Oracle(object):
@@ -120,11 +126,11 @@ class Oracle(object):
     def _order(self, n, o):
         # in-order traversal ordering
         i = bisect_left(self.graph[n], n)
-        for c in islice(self.graph[n], i):
+        for c in self.graph[n][:i]:
             o = self._order(c, o)
         self.order[n] = o
         o += 1
-        for c in islice(self.graph[n], i, None):
+        for c in self.graph[n][i:]:
             o = self._order(c, o)
         return o
 
