@@ -3,14 +3,16 @@ data_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
             "ud-2.0-baselinemodel-train-embeddings/"
 
 treebanks = {
-    # 'kk': "Kazakh",
-    # 'ug': "Uyghur",
-    # 'uk': "Ukrainian",
-    # 'ga': "Irish",
-    # 'gl_treegal': "Galician-TreeGal",
-    # 'fr_partut': "French-ParTUT",
-    # 'la': "Latin",
-    # 'sl_sst': "Slovenian-SST",
+    # only train
+    'kk': "Kazakh",
+    'ug': "Uyghur",
+    'uk': "Ukrainian",
+    'ga': "Irish",
+    'gl_treegal': "Galician-TreeGal",
+    'fr_partut': "French-ParTUT",
+    'la': "Latin",
+    'sl_sst': "Slovenian-SST",
+    # with dev
     'cs_cltt': "Czech-CLTT",
     'hu': "Hungarian",
     'vi': "Vietnamese",
