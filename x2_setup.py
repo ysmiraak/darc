@@ -1,17 +1,21 @@
-from ud2 import ud_path, treebanks
+from ud2 import path
 from setup import Setup
 from conllu import load, save
 
 
-def setup(lang, suffix="", proj=False):
-    dev = ud_path + "UD_{}/{}-ud-dev.conllu".format(treebanks[lang], lang)
-    save(load(dev), "./golds/{}-ud-dev.conllu".format(lang))
-    train = ud_path + "UD_{}/{}-ud-train.conllu".format(treebanks[lang], lang)
-    form_w2v = "./embed/{}-form{}.w2v".format(lang, suffix)
-    lemm_w2v = "./embed/{}-lemm{}.w2v".format(lang, suffix)
-    Setup.make(train, form_w2v, lemm_w2v, proj) \
-         .save("./setups/{}-{}{}.npy"
-               .format(lang, 'proj' if proj else 'nonp', suffix))
+def setup(lang,
+          suffix="",
+          proj=False,
+          embed_path="./embed/",
+          setup_path="./setups/"):
+    save(load(path(lang, 'dev')), "./golds/{}-ud-dev.conllu".format(lang))
+    Setup \
+        .make(path(lang, 'train'),
+              form_w2v="{}{}{}.form".format(embed_path, lang, suffix),
+              lemm_w2v="{}{}{}.lemm".format(embed_path, lang, suffix),
+              proj=proj) \
+        .save("{}{}-{}{}.npy"
+              .format(setup_path, lang, 'proj' if proj else 'nonp', suffix))
 
 
 if '__main__' == __name__:

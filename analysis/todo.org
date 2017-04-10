@@ -14,11 +14,25 @@
 
 * embeddings
 
-- smaller window should be better at capturing syntactic info
+- optimize window, negative, sample
 
 - upos & drel embeddings
 
 * silver training
+
+- run udpipe models on gold-train to produce silver-train
+
+- align gold-train and silver-train to annotate head and deprel
+
+- pretrain embeddings on silver-train: 32 dim form 32 dim lemma; 64 dim form for
+  =ug=, =en_lines=, =sv_lines=, =id=, =pt_br=, =ko=
+
+- make setups from silver-train and embeddings (tune proj)
+
+- make models from setups and save them with the necessary data from setups
+
+- finally test.conllu -> udpipe model -> darc model
+
 * troubles
 
 ** retrain udpipe models
@@ -39,7 +53,5 @@ i hope we could try the approach in `/data/ud-2.0-conll17-crossfold-morphology`,
 using 10-fold jack-knifing to train our udpipe models. this approach does perform
 better, if you look at the evaluation results. but they didn't release the models
 with this approach.
-
-** check if udpipe doesn't handle multiwords
 
 ** surprise languages

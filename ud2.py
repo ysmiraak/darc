@@ -1,5 +1,3 @@
-ud_path = "/data/ud-treebanks-conll2017/"
-
 treebanks = {
     # only train
     'kk': "Kazakh",
@@ -68,3 +66,10 @@ treebanks = {
     'ru_syntagrus': "Russian-SynTagRus",
     'cs': "Czech",
 }
+
+
+def path(lang, ds='train'):
+    """-> str: the path for lang"""
+    return "/data/ud-treebanks-conll2017/" \
+        "UD_{}/{}-ud-{}.conllu" \
+        .format(treebanks[lang], lang, ds)

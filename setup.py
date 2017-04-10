@@ -9,7 +9,7 @@ from keras.constraints import max_norm
 
 
 class Setup(object):
-    """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
+    """for dependency parsing with form, lemma, upostag, feats, and deprel"""
     __slots__ = 'idx2tran', 'form2idx', 'lemm2idx', 'upos2idx', 'drel2idx', \
                 'feat2idx', 'form_emb', 'lemm_emb', 'x', 'y'
 
@@ -117,12 +117,12 @@ class Setup(object):
         return self
 
     @staticmethod
-    def make(train_conllu, form_w2v_txt, lemm_w2v_txt, proj=False):
+    def make(train_conllu, form_w2v, lemm_w2v, binary=True, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
             load(train_conllu),
-            KeyedVectors.load_word2vec_format(form_w2v_txt),
-            KeyedVectors.load_word2vec_format(lemm_w2v_txt),
+            KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
+            KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary),
             proj=proj)
 
     def model(self,
