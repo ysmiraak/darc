@@ -15,12 +15,11 @@ class Config(object):
     def cons(sent):
         """"Sent -> Config"""
         n = len(sent.head)
-        return Config(
-            sent=sent,
-            input=list(range(n - 1, 0, -1)),
-            stack=[0],
-            graph=[[] for _ in range(n)],
-            deprel=list(repeat("_", n)))
+        return Config(sent=sent,
+                      input=list(range(n - 1, 0, -1)),
+                      stack=[0],
+                      graph=[[] for _ in range(n)],
+                      deprel=list(repeat("_", n)))
 
     def is_terminal(self):
         """-> bool"""
@@ -157,14 +156,11 @@ class Oracle(object):
         if 0 != self.mode and self.order[i] > self.order[j]:
             if 1 == self.mode:
                 return 'swap', None
-            if not config.input \
-               or self.mpcrt[j] != self.mpcrt[config.input[-1]]:
+            if not config.input or self.mpcrt[j] != self.mpcrt[config.input[-1]]:
                 return 'swap', None
-        if self.sent.head[i] == j \
-           and len(self.graph[i]) == len(config.graph[i]):
+        if self.sent.head[i] == j and len(self.graph[i]) == len(config.graph[i]):
             return 'left', self.sent.deprel[i]
-        if i == self.sent.head[j] \
-           and len(self.graph[j]) == len(config.graph[j]):
+        if i == self.sent.head[j] and len(self.graph[j]) == len(config.graph[j]):
             return 'right', self.sent.deprel[j]
         return 'shift', None
 

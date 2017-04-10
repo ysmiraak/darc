@@ -24,11 +24,10 @@ class Model(object):
 
     def save(self, file, with_data=False):
         """as npy file"""
-        np.save(file, {
-            'setup': self.setup.bean(with_data),
-            'model': self.model.to_json(),
-            'weights': self.model.get_weights()
-        })
+        np.save(file,
+                {'setup': self.setup.bean(with_data),
+                 'model': self.model.to_json(),
+                 'weights': self.model.get_weights()})
 
     @staticmethod
     def load(file):

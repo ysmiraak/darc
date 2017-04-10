@@ -70,6 +70,5 @@ treebanks = {
 
 def path(lang, ds='train'):
     """-> str: the path for lang"""
-    return "/data/ud-treebanks-conll2017/" \
-        "UD_{}/{}-ud-{}.conllu" \
+    return "/data/ud-treebanks-conll2017/UD_{}/{}-ud-{}.conllu" \
         .format(treebanks[lang], lang, ds)

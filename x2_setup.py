@@ -3,19 +3,12 @@ from setup import Setup
 from conllu import load, save
 
 
-def setup(lang,
-          suffix="",
-          proj=False,
-          embed_path="./embed/",
-          setup_path="./setups/"):
+def setup(lang, suffix="", proj=False, embed_path="./embed/", setup_path="./setups/"):
     # save(load(path(lang, 'dev')), "./golds/{}-ud-dev.conllu".format(lang))
-    Setup \
-        .make(path(lang, 'train'),
-              form_w2v="{}{}{}.form".format(embed_path, lang, suffix),
-              lemm_w2v="{}{}{}.lemm".format(embed_path, lang, suffix),
-              proj=proj) \
-        .save("{}{}-{}{}.npy"
-              .format(setup_path, lang, 'proj' if proj else 'nonp', suffix))
+    Setup.make(path(lang, 'train'), proj=proj, binary=True,
+               form_w2v="{}{}{}.form".format(embed_path, lang, suffix),
+               lemm_w2v="{}{}{}.lemm".format(embed_path, lang, suffix)) \
+         .save("{}{}-{}{}.npy".format(setup_path, lang, 'proj' if proj else 'nonp', suffix))
 
 
 if '__main__' == __name__:

@@ -1,15 +1,14 @@
 from collections import namedtuple
 
 
-cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', \
-       'feats', 'head', 'deprel', 'deps', 'misc'
+cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', 'feats', 'head', 'deprel', 'deps', 'misc'
 Sent = namedtuple('Sent', ('multi', ) + cols)
 Sent.cols = cols
 del cols
 
 # id=0 serves as root; form="", lemma="", upostag="", feats="" used by setup as
-# sentinel for missing nodes; head=0, deprel="_" used by transition as default
-# for consistency; the others serve no purpose.
+# sentinel for missing nodes; head=0, deprel="_" as default in transition for
+# consistency; the others serve no purpose.
 Sent.dumb = 0, "", "", "", None, "", 0, "_", None, None
 
 
@@ -71,8 +70,7 @@ def save(sents, file):
                     file.write("\n")
                     m += 1
                 else:
-                    file.write("\t".join(
-                        [str(getattr(sent, col)[w]) for col in Sent.cols]))
+                    file.write("\t".join([str(getattr(sent, col)[w]) for col in Sent.cols]))
                     file.write("\n")
                     w += 1
             file.write("\n")
