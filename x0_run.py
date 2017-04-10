@@ -12,9 +12,8 @@ train_path = ud_path + "UD_{}/{}-ud-train.conllu".format(treebanks[lang], lang)
 embedding_path = data_path + "{}.skip.forms.50.vectors".format(lang)
 
 setup = Setup.make(train_path, embedding_path, proj)
-# dev = list(load(dev_path))
+dev = list(load(dev_path))
 # save(dev, "./golds/{}-ud-dev.conllu".format(lang))
-dev = list(load("./golds/{}-ud-dev.conllu".format(lang)))
 
 
 model = setup.model()

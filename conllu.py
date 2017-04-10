@@ -13,10 +13,10 @@ del cols
 Sent.dumb = 0, "", "", "", None, "", 0, "_", None, None
 
 
-def cons(lines):
+def cons(lines, dumb=Sent.dumb):
     """[str] -> Sent"""
     multi = []
-    nodes = [Sent.dumb]
+    nodes = [dumb]
     for line in lines:
         node = line.split("\t")
         assert 10 == len(node)
@@ -42,7 +42,7 @@ Sent.cons = cons
 del cons
 
 
-def load(file):
+def load(file, dumb=Sent.dumb):
     """-> iter([Sent])"""
     with open(file, encoding='utf-8') as file:
         sent = []
@@ -53,10 +53,10 @@ def load(file):
             elif line:
                 sent.append(line)
             elif sent:
-                yield Sent.cons(sent)
+                yield Sent.cons(sent, dumb)
                 sent = []
         if sent:
-            yield Sent.cons(sent)
+            yield Sent.cons(sent, dumb)
 
 
 def save(sents, file):

@@ -10,15 +10,13 @@
 
 - with full deprel
 
+* embeddings
+
+- smaller window should be better at capturing syntactic info
+
+- upos & drel embeddings
+
 * silver training
-* pretrained embeddings
-
-train embeddings on silver data
-
-- lemma/form embeddings
-
-- upos embeddings
-
 * troubles
 
 ** retrain udpipe models
