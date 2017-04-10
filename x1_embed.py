@@ -15,7 +15,7 @@ def stuff(lang, embed_path="./embed/"):
             file.write("\n")
     del freq
     freq = Counter(lemm for sent in sents for lemm in sent.lemma)
-    file = "{}{}.lemm.raw".lemmat(embed_path, lang)
+    file = "{}{}.lemm.raw".format(embed_path, lang)
     with open(file, 'w', encoding='utf-8') as file:
         for sent in sents:
             file.write(" ".join(
