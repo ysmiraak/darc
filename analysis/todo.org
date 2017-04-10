@@ -1,10 +1,12 @@
-* dropout
+* architecture
 
-- on embeddings
+- dropout on embeddings
 
-- max-norm
+- max-norm on embeddings
 
-- on hidden nodes and optimize hidden units
+- dropout on hidden nodes and optimize hidden units
+
+- max-norm on hidden
 
 - more layers
 

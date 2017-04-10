@@ -1,6 +1,4 @@
 ud_path = "/data/ud-treebanks-conll2017/"
-data_path = "/data/udpipe-ud-2.0-conll17-170315-supplementary-data/" \
-            "ud-2.0-baselinemodel-train-embeddings/"
 
 treebanks = {
     # only train

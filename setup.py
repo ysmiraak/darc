@@ -10,10 +10,11 @@ from keras.constraints import max_norm
 
 class Setup(object):
     """sents: [Sent], w2v: gensim.models.keyedvectors.KeyedVectors"""
-    __slots__ = 'form2idx', 'upos2idx', 'drel2idx', 'feat2idx', 'idx2tran', \
-                'form_emb', 'x', 'y'
+    __slots__ = 'idx2tran', 'form2idx', 'lemm2idx', 'upos2idx', 'drel2idx', \
+                'feat2idx', 'form_emb', 'lemm_emb', 'x', 'y'
 
     dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
+    dumb_lemm, root_lemm, obsc_lemm = Sent.dumb[2], "</s>", "_"
     dumb_upos, root_upos = Sent.dumb[3], "ROOT"
     dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
     dumb_drel = Sent.dumb[7]
@@ -24,21 +25,36 @@ class Setup(object):
             setattr(self, attr, val)
 
     @staticmethod
-    def cons(sents, w2v, proj=False):
+    def cons(sents, form_w2v, lemm_w2v, proj=False):
         """[Sent], gensim.models.keyedvectors.KeyedVectors -> Setup"""
         # form_emb form2idx
         specials = Setup.dumb_form, Setup.root_form, Setup.obsc_form
         pad = 0
         for form in specials:
-            if form not in w2v.vocab:
+            if form not in form_w2v.vocab:
                 pad += 1
-        form_emb = np.zeros((pad + len(w2v.index2word), 50), np.float32)
-        form_emb[:len(w2v.index2word)] = w2v.syn0
-        form2idx = {form: idx for idx, form in enumerate(w2v.index2word)}
-        del w2v
+        voc, dim = form_w2v.syn0.shape
+        form_emb = np.zeros((pad + voc, dim), np.float32)
+        form_emb[:len(form_w2v.index2word)] = form_w2v.syn0
+        form2idx = {form: idx for idx, form in enumerate(form_w2v.index2word)}
+        del form_w2v
         for form in specials:
             if form not in form2idx:
                 form2idx[form] = len(form2idx)
+        # lemm_emb lemm2idx
+        specials = Setup.dumb_lemm, Setup.root_lemm, Setup.obsc_lemm
+        pad = 0
+        for lemm in specials:
+            if lemm not in lemm_w2v.vocab:
+                pad += 1
+        voc, dim = lemm_w2v.syn0.shape
+        lemm_emb = np.zeros((pad + voc, dim), np.float32)
+        lemm_emb[:len(lemm_w2v.index2word)] = lemm_w2v.syn0
+        lemm2idx = {lemm: idx for idx, lemm in enumerate(lemm_w2v.index2word)}
+        del lemm_w2v
+        for lemm in specials:
+            if lemm not in lemm2idx:
+                lemm2idx[lemm] = len(lemm2idx)
         # upos2idx feat2idx drel2idx idx2tran
         upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1}
         feat2idx = {Setup.dumb_feat: 0, Setup.root_feat: 1}
@@ -66,6 +82,8 @@ class Setup(object):
         self = Setup(
             form2idx=form2idx,
             form_emb=form_emb,
+            lemm2idx=lemm2idx,
+            lemm_emb=lemm_emb,
             upos2idx=upos2idx,
             drel2idx=drel2idx,
             feat2idx=feat2idx,
@@ -75,9 +93,9 @@ class Setup(object):
             hotv = np.zeros(len(idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        data = [], [], [], [], []
-        tran_append, form_append, upos_append, drel_append, feat_append \
-            = [d.append for d in data]
+        data = [], [], [], [], [], []
+        form_append, lemm_append, upos_append, drel_append, feat_append, \
+            tran_append, = [d.append for d in data]
         for sent in sents:
             oracle = Oracle.cons(sent, proj=proj)
             config = Config.cons(sent)
@@ -87,22 +105,24 @@ class Setup(object):
                     # this happends on a non-proj sent with proj setting
                     break
                 feat = self.feature(config)
-                tran_append(tran2idx[tran])
                 form_append(feat[0])
-                upos_append(feat[1])
-                drel_append(feat[2])
-                feat_append(feat[3])
+                lemm_append(feat[1])
+                upos_append(feat[2])
+                drel_append(feat[3])
+                feat_append(feat[4])
+                tran_append(tran2idx[tran])
                 getattr(config, tran[0])(tran[1])
-        self.y = np.array(data[0], np.float32)
-        self.x = [np.concatenate(d) for d in data[1:]]
+        self.x = [np.concatenate(d) for d in data[:-1]]
+        self.y = np.array(data[-1], np.float32)
         return self
 
     @staticmethod
-    def make(train_conllu, embedding_txt, proj=False):
+    def make(train_conllu, form_w2v_txt, lemm_w2v_txt, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
             load(train_conllu),
-            KeyedVectors.load_word2vec_format(embedding_txt),
+            KeyedVectors.load_word2vec_format(form_w2v_txt),
+            KeyedVectors.load_word2vec_format(lemm_w2v_txt),
             proj=proj)
 
     def model(self,
@@ -132,17 +152,25 @@ class Setup(object):
             dense_const = max_norm(dense_const)
         num_node = 18
         form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
+        lemm = Input(name="lemm", shape=(num_node, ), dtype=np.uint16)
         upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
         drel = Input(name="drel", shape=(num_node - 2, ), dtype=np.uint8)
         feat = Input(name="feat", shape=(num_node * len(self.feat2idx), ))
-        i = [form, upos, drel, feat]
+        i = [form, lemm, upos, drel, feat]
         form = Embedding(
             input_dim=len(self.form2idx),
             input_length=num_node,
-            output_dim=50,
+            output_dim=self.form_emb.shape[-1],
             weights=[self.form_emb],
             embeddings_constraint=emb_const,
             name="form_emb")(form)
+        lemm = Embedding(
+            input_dim=len(self.lemm2idx),
+            input_length=num_node,
+            output_dim=self.lemm_emb.shape[-1],
+            weights=[self.lemm_emb],
+            embeddings_constraint=emb_const,
+            name="lemm_emb")(lemm)
         upos = Embedding(
             input_dim=len(self.upos2idx),
             input_length=num_node,
@@ -158,13 +186,15 @@ class Setup(object):
             embeddings_constraint=emb_const,
             name="drel_emb")(drel)
         form = Flatten(name="form_flat")(form)
+        lemm = Flatten(name="lemm_flat")(lemm)
         upos = Flatten(name="upos_flat")(upos)
         drel = Flatten(name="drel_flat")(drel)
         if emb_dropout:
             form = Dropout(name="form_dropout", rate=emb_dropout)(form)
+            lemm = Dropout(name="lemm_dropout", rate=emb_dropout)(lemm)
             upos = Dropout(name="upos_dropout", rate=emb_dropout)(upos)
             drel = Dropout(name="drel_dropout", rate=emb_dropout)(drel)
-        o = Concatenate(name="inputs")([form, upos, drel, feat])
+        o = Concatenate(name="inputs")([form, lemm, upos, drel, feat])
         o = Dense(
             units=hidden_units,
             activation=activation,
@@ -261,14 +291,18 @@ class Setup(object):
                 x[16] = i[-2]  # i1
                 if 3 <= len(i):
                     x[17] = i[-3]  # i2
-        # form upos
+        # form lemm upos
         form2idx = self.form2idx.get
+        lemm2idx = self.lemm2idx.get
         upos2idx = self.upos2idx.get
         form_unk = form2idx(self.obsc_form)
+        lemm_unk = lemm2idx(self.obsc_lemm)
         upos_unk = upos2idx(self.dumb_upos)
         form = config.sent.form
+        lemm = config.sent.lemma
         upos = config.sent.upostag
         form = np.fromiter((form2idx(form[i], form_unk) for i in x), np.uint16)
+        lemm = np.fromiter((lemm2idx(lemm[i], lemm_unk) for i in x), np.uint16)
         upos = np.fromiter((upos2idx(upos[i], upos_unk) for i in x), np.uint8)
         # drel
         drel2idx = self.drel2idx
@@ -281,6 +315,7 @@ class Setup(object):
         if 2 <= len(s) and 0 == s[-2]:
             # s1 at idx 1 is root
             form[1] = form2idx(self.root_form)
+            lemm[1] = lemm2idx(self.root_lemm)
             upos[1] = upos2idx(self.root_upos)
             feats[1] = self.root_feat
         # set-valued feat (Alberti et al. 2015)
@@ -293,12 +328,12 @@ class Setup(object):
                     feat[num_feat * idx + feat2idx[ft]] = 1.0
                 except KeyError:
                     pass
-        form.shape = upos.shape = drel.shape = feat.shape = 1, -1
-        return [form, upos, drel, feat]  # model.predict takes list
+        form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
+        return [form, lemm, upos, drel, feat]  # model.predict takes list
 
     def save(self, file, with_data=True):
         """as npy file"""
-        attrs = Setup.__slots__ if with_data else Setup.__slots__[:-3]
+        attrs = Setup.__slots__ if with_data else Setup.__slots__[:-4]
         np.save(file, {attr: getattr(self, attr) for attr in attrs})
 
     @staticmethod
@@ -308,31 +343,12 @@ class Setup(object):
 
 
 # lang, proj = 'kk', False
-# from ud2 import ud_path, data_path, treebanks
-# train_path = ud_path + "UD_{}/{}-ud-train.conllu" \
-#              .format(treebanks[lang], lang)
-# embedding_path = data_path + "{}.skip.forms.50.vectors".format(lang)
-# setup = Setup.make(train_path, embedding_path, proj)
+# from ud2 import ud_path, treebanks
+# setup = Setup.make(
+#     ud_path + "UD_{}/{}-ud-train.conllu".format(treebanks[lang], lang),
+#     "./embed/{}-form.w2v".format(lang),
+#     "./embed/{}-lemm.w2v".format(lang),
+#     proj=proj)
 # from keras.utils import plot_model
 # model = setup.model()
 # plot_model(model, to_file=".tmp/model.png")
-
-
-def parse(setup, model, sent):
-    """-> Sent"""
-    config = Config.cons(sent)
-    while not config.is_terminal():
-        if 2 > len(config.stack):
-            config.shift()
-            continue
-        prob = model.predict(setup.feature(config), 1).ravel()
-        for i, r in enumerate(prob.argsort()[::-1]):
-            act, arg = setup.idx2tran[r]
-            if config.doable(act):
-                print("{}\t{}\t{:.4f}".format(i, act, prob[r]))
-                getattr(config, act)(arg)
-                break
-        else:
-            print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
-            break
-    return config.finish()
