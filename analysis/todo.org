@@ -1,7 +1,5 @@
 * architecture
 
-- dropout on embeddings
-
 - max-norm on embeddings
 
 - dropout on hidden nodes and optimize hidden units
@@ -11,10 +9,6 @@
 - more layers
 
 - with full deprel
-
-* embeddings
-
-- optimize window, negative, sample
 
 - upos & drel embeddings
 

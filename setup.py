@@ -133,7 +133,7 @@ class Setup(object):
               dense_init='orthogonal',
               emb_const='unit_norm',
               dense_const=None,
-              emb_dropout=0.0,
+              emb_dropout=0.25,
               dense_dropout=0.0,
               activation='tanh',
               optimizer='adamax'):
@@ -331,10 +331,14 @@ class Setup(object):
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
         return [form, lemm, upos, drel, feat]  # model.predict takes list
 
+    def bean(self, with_data=True):
+        """-> dict"""
+        attrs = Setup.__slots__ if with_data else Setup.__slots__[:-4]
+        return {attr: getattr(self, attr) for attr in attrs}
+
     def save(self, file, with_data=True):
         """as npy file"""
-        attrs = Setup.__slots__ if with_data else Setup.__slots__[:-4]
-        np.save(file, {attr: getattr(self, attr) for attr in attrs})
+        np.save(file, self.bean(with_data))
 
     @staticmethod
     def load(file):
@@ -345,10 +349,10 @@ class Setup(object):
 # lang, proj = 'kk', False
 # from ud2 import path
 # setup = Setup.make(
-#     path(lang, 'train')
+#     path(lang, 'train'),
 #     "./embed/{}-form.w2v".format(lang),
 #     "./embed/{}-lemm.w2v".format(lang),
-#     binary=False
+#     binary=False,
 #     proj=proj)
 # from keras.utils import plot_model
 # model = setup.model()
