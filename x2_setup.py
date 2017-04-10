@@ -17,7 +17,7 @@ def setup(lang, suffix="", proj=False):
 if '__main__' == __name__:
     from sys import argv
     try:
-        argv[2] = bool(argv[2])
+        argv[3] = bool(argv[3])
     except IndexError:
         pass
-    setup(*argv)
+    setup(*argv[1:])
