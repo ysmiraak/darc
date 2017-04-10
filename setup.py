@@ -343,11 +343,12 @@ class Setup(object):
 
 
 # lang, proj = 'kk', False
-# from ud2 import ud_path, treebanks
+# from ud2 import path
 # setup = Setup.make(
-#     ud_path + "UD_{}/{}-ud-train.conllu".format(treebanks[lang], lang),
+#     path(lang, 'train')
 #     "./embed/{}-form.w2v".format(lang),
 #     "./embed/{}-lemm.w2v".format(lang),
+#     binary=False
 #     proj=proj)
 # from keras.utils import plot_model
 # model = setup.model()

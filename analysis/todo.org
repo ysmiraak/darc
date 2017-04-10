@@ -20,9 +20,7 @@
 
 * silver training
 
-- run udpipe models on gold-train to produce silver-train
-
-- align gold-train and silver-train to annotate head and deprel
+- run udpipe tagger on gold-train to produce silver-train
 
 - pretrain embeddings on silver-train: 32 dim form 32 dim lemma; 64 dim form for
   =ug=, =en_lines=, =sv_lines=, =id=, =pt_br=, =ko=

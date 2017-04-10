@@ -78,7 +78,8 @@ def save(sents, file):
             file.write("\n")
 
 
-# sents = list(load("/data/ud-treebanks-conll2017/UD_German/de-ud-dev.conllu"))
+# from ud2 import path
+# sents = list(load(path('de', 'dev')))
 # save(sents, ".tmp/tmp.conllu")
 # sents2 = list(load(".tmp/tmp.conllu"))
 # assert sents == sents2
