@@ -15,11 +15,12 @@ class Config(object):
     def cons(sent):
         """"Sent -> Config"""
         n = len(sent.head)
-        return Config(sent=sent,
-                      input=list(range(n - 1, 0, -1)),
-                      stack=[0],
-                      graph=[[] for _ in range(n)],
-                      deprel=list(repeat("_", n)))
+        return Config(
+            sent=sent,
+            input=list(range(n - 1, 0, -1)),
+            stack=[0],
+            graph=[[] for _ in range(n)],
+            deprel=list(repeat("_", n)))
 
     def is_terminal(self):
         """-> bool"""
@@ -167,27 +168,29 @@ class Oracle(object):
 
 # from conllu import Sent
 
-# s = Sent.cons(["1\tA\t_\t_\t_\t_\t2\tDET\t_\t_",
-#                "2\thearing\t_\t_\t_\t_\t3\tSBJ\t_\t_",
-#                "3\tis\t_\t_\t_\t_\t0\tROOT\t_\t_",
-#                "4\tscheduled\t_\t_\t_\t_\t3\tVG\t_\t_",
-#                "5\ton\t_\t_\t_\t_\t2\tNMOD\t_\t_",
-#                "6\tthe\t_\t_\t_\t_\t7\tDET\t_\t_",
-#                "7\tissue\t_\t_\t_\t_\t5\tPC\t_\t_",
-#                "8\ttoday\t_\t_\t_\t_\t4\tADV\t_\t_",
-#                "9\t.\t_\t_\t_\t_\t3\tP\t_\t_"])
+# s = Sent.cons(
+#     ["1\tA\t_\t_\t_\t_\t2\tDET\t_\t_",
+#      "2\thearing\t_\t_\t_\t_\t3\tSBJ\t_\t_",
+#      "3\tis\t_\t_\t_\t_\t0\tROOT\t_\t_",
+#      "4\tscheduled\t_\t_\t_\t_\t3\tVG\t_\t_",
+#      "5\ton\t_\t_\t_\t_\t2\tNMOD\t_\t_",
+#      "6\tthe\t_\t_\t_\t_\t7\tDET\t_\t_",
+#      "7\tissue\t_\t_\t_\t_\t5\tPC\t_\t_",
+#      "8\ttoday\t_\t_\t_\t_\t4\tADV\t_\t_",
+#      "9\t.\t_\t_\t_\t_\t3\tP\t_\t_"])
 # o = Oracle.cons(s)
 # assert o.order == [0, 1, 2, 6, 7, 3, 4, 5, 8, 9]
 # assert o.mpcrt == [0, 2, 2, 3, 4, 5, 5, 5, 8, 9]
 
-# s = Sent.cons(["1\tWho\t_\t_\t_\t_\t7\tNMOD\t_\t_",
-#                "2\tdid\t_\t_\t_\t_\t0\tROOT\t_\t_",
-#                "3\tyou\t_\t_\t_\t_\t2\tSUBJ\t_\t_",
-#                "4\tsend\t_\t_\t_\t_\t2\tVG\t_\t_",
-#                "5\tthe\t_\t_\t_\t_\t6\tDET\t_\t_",
-#                "6\tletter\t_\t_\t_\t_\t4\tOBJ1\t_\t_",
-#                "7\tto\t_\t_\t_\t_\t4\tOBJ2\t_\t_",
-#                "8\t?\t_\t_\t_\t_\t2\tP\t_\t_"])
+# s = Sent.cons(
+#     ["1\tWho\t_\t_\t_\t_\t7\tNMOD\t_\t_",
+#      "2\tdid\t_\t_\t_\t_\t0\tROOT\t_\t_",
+#      "3\tyou\t_\t_\t_\t_\t2\tSUBJ\t_\t_",
+#      "4\tsend\t_\t_\t_\t_\t2\tVG\t_\t_",
+#      "5\tthe\t_\t_\t_\t_\t6\tDET\t_\t_",
+#      "6\tletter\t_\t_\t_\t_\t4\tOBJ1\t_\t_",
+#      "7\tto\t_\t_\t_\t_\t4\tOBJ2\t_\t_",
+#      "8\t?\t_\t_\t_\t_\t2\tP\t_\t_"])
 # o = Oracle.cons(s)
 # assert o.order == [0, 6, 1, 2, 3, 4, 5, 7, 8]
 # assert o.mpcrt == [0, 1, 2, 2, 4, 4, 4, 7, 8]

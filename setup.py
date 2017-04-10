@@ -42,16 +42,15 @@ class Setup(object):
             if form not in form2idx:
                 form2idx[form] = len(form2idx)
         # lemm_emb lemm2idx
-        if lemm_w2v:
-            specials = Setup.dumb_lemm, Setup.root_lemm, Setup.obsc_lemm
-            pad = 0
-            for lemm in specials:
-                if lemm not in lemm_w2v.vocab:
-                    pad += 1
-            voc, dim = lemm_w2v.syn0.shape
-            lemm_emb = np.zeros((pad + voc, dim), np.float32)
-            lemm_emb[:len(lemm_w2v.index2word)] = lemm_w2v.syn0
-            lemm2idx = {lemm: idx for idx, lemm in enumerate(lemm_w2v.index2word)}
+        specials = Setup.dumb_lemm, Setup.root_lemm, Setup.obsc_lemm
+        pad = 0
+        for lemm in specials:
+            if lemm not in lemm_w2v.vocab:
+                pad += 1
+        voc, dim = lemm_w2v.syn0.shape
+        lemm_emb = np.zeros((pad + voc, dim), np.float32)
+        lemm_emb[:len(lemm_w2v.index2word)] = lemm_w2v.syn0
+        lemm2idx = {lemm: idx for idx, lemm in enumerate(lemm_w2v.index2word)}
         del lemm_w2v
         for lemm in specials:
             if lemm not in lemm2idx:
@@ -80,12 +79,13 @@ class Setup(object):
         if not proj:
             idx2tran.append(('swap', None))
         # x y
-        self = Setup(form2idx=form2idx, form_emb=form_emb,
-                     lemm2idx=lemm2idx, lemm_emb=lemm_emb,
-                     upos2idx=upos2idx,
-                     drel2idx=drel2idx,
-                     feat2idx=feat2idx,
-                     idx2tran=idx2tran)
+        self = Setup(
+            form2idx=form2idx, form_emb=form_emb,
+            lemm2idx=lemm2idx, lemm_emb=lemm_emb,
+            upos2idx=upos2idx,
+            drel2idx=drel2idx,
+            feat2idx=feat2idx,
+            idx2tran=idx2tran)
         tran2idx = {}
         for idx, tran in enumerate(idx2tran):
             hotv = np.zeros(len(idx2tran), np.float32)
@@ -117,10 +117,11 @@ class Setup(object):
     @staticmethod
     def make(train_conllu, form_w2v, lemm_w2v, binary=True, proj=False):
         """-> Setup; from files"""
-        return Setup.cons(load(train_conllu), proj=proj,
-                          form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
-                          lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary)
-                          if lemm_w2v else None)
+        return Setup.cons(
+            load(train_conllu), proj=proj,
+            form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
+            lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary)
+            if lemm_w2v else None)
 
     def model(self,
               upos_emb_dim=12,
