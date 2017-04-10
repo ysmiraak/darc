@@ -17,12 +17,15 @@ def ready(lang, suffix):
     return train
 
 
-lang, suffix = 'la_proiel', '-nonp'
-# lang, suffix = 'fa', 'nonp'
-# lang, suffix = 'grc_proiel', 'nonp'
-# lang, suffix = 'zh', 'proj'
-
-w = 4, 5, 6, 7, 8
-infix = "-w{}s1n8i16".format(w[0])
-train = ready(lang, suffix + infix)
-train(infix, 16)
+if '__main__' == __name__:
+    from sys import argv
+    
+    lang, suffix = 'la_proiel', '-nonp'
+    # lang, suffix = 'fa', 'nonp'
+    # lang, suffix = 'grc_proiel', 'nonp'
+    # lang, suffix = 'zh', 'proj'
+    
+    w = 4, 5, 6, 7, 8
+    infix = "-w{}s1n8i16".format(w[int(argv[1])])
+    train = ready(lang, suffix + infix)
+    train(infix, 16)
