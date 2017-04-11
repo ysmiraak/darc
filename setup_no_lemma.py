@@ -1,4 +1,4 @@
-rom itertools import repeat
+from itertools import repeat
 from transition import Config, Oracle
 from conllu import Sent, load
 import numpy as np
