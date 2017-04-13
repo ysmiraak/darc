@@ -2,15 +2,11 @@
 
 - max-norm on embeddings
 
-- dropout on hidden nodes and optimize hidden units
-
 - max-norm on hidden
 
-- more layers
+- two hidden layers
 
 - with full deprel
-
-- upos & drel embeddings
 
 * silver training
 
@@ -27,23 +23,4 @@
 
 * troubles
 
-** retrain udpipe models
-
-for tokenizing, sent-splitting, lemmatizing, postagging, and morphtagging
-
-the release udpipe models in `udpipe-ud-2.0-conll17-170315` and embeddings in
-`udpipe-ud-2.0-conll17-170315-supplementary-data` split the train sets further
-into train and tune sets.
-
-on top of that, we have 8 small treebanks that only have train sets
-(Slovenian-SST Latin French-ParTUT Galician-TreeGal Irish Ukrainian Uyghur
-Kazakh), and they are split into three parts. it's impossible to learn any model
-from that. for example, the tune set for kazakh has only one sentence. see
-`/data/ud-2.0-conll17-baselinemodel-split`.
-
-i hope we could try the approach in `/data/ud-2.0-conll17-crossfold-morphology`,
-using 10-fold jack-knifing to train our udpipe models. this approach does perform
-better, if you look at the evaluation results. but they didn't release the models
-with this approach.
-
-** surprise languages
+- surprise languages
