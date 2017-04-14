@@ -101,8 +101,9 @@ class SetupNoLemma(object):
     def make(train_conllu, form_w2v, binary=True, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
-            load(train_conllu), proj=proj,
-            form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary))
+            load(train_conllu),
+            form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
+            proj=proj)
 
     def model(self,
               upos_emb_dim=12,
@@ -117,6 +118,10 @@ class SetupNoLemma(object):
               activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
+        assert 0 < upos_emb_dim
+        assert 0 < drel_emb_dim
+        assert 0 <= emb_dropout < 1
+        assert 0 <= dense_dropout < 1
         try:
             float(emb_const)
         except (TypeError, ValueError):
