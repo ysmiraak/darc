@@ -6,10 +6,10 @@ Sent = namedtuple('Sent', ('multi', ) + cols)
 Sent.cols = cols
 del cols
 
-# id=0 serves as root; form="", lemma="", upostag="", feats="" used by setup as
-# sentinel for missing nodes; head=0, deprel="_" as default in transition for
-# consistency; the others serve no purpose.
-Sent.dumb = 0, "", "", "", None, "", 0, "_", None, None
+# id=0 serves as root; form="", lemma="", upostag="", xpostag="", feats="" used
+# by setup as sentinel for missing nodes; head=0, deprel="_" as default in
+# transition for consistency; deps=None and misc=None serve no purpose.
+Sent.dumb = 0, "", "", "", "", "", 0, "_", None, None
 
 
 def cons(lines, dumb=Sent.dumb):

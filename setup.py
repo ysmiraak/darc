@@ -124,28 +124,28 @@ class Setup(object):
             proj=proj)
 
     def model(self,
-              upos_emb_dim=12,
-              drel_emb_dim=16,
+              upos_embed_dim=12,
+              drel_embed_dim=16,
               hidden_units=200,
-              emb_init='uniform',
+              embed_init='uniform',
               dense_init='orthogonal',
-              emb_const='unit_norm',
+              embed_const='unit_norm',
               dense_const=None,
-              emb_dropout=0.25,
+              embed_dropout=0.25,
               dense_dropout=0.0,
               activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
-        assert 0 < upos_emb_dim
-        assert 0 < drel_emb_dim
-        assert 0 <= emb_dropout < 1
+        assert 0 < upos_embed_dim
+        assert 0 < drel_embed_dim
+        assert 0 <= embed_dropout < 1
         assert 0 <= dense_dropout < 1
         try:
-            float(emb_const)
+            float(embed_const)
         except (TypeError, ValueError):
             pass
         else:
-            emb_const = max_norm(emb_const)
+            embed_const = max_norm(embed_const)
         try:
             float(dense_const)
         except (TypeError, ValueError):
@@ -164,38 +164,38 @@ class Setup(object):
             input_length=num_node,
             output_dim=self.form_emb.shape[-1],
             weights=[self.form_emb],
-            embeddings_constraint=emb_const,
+            embeddings_constraint=embed_const,
             name="form_emb")(form)
         lemm = Embedding(
             input_dim=len(self.lemm2idx),
             input_length=num_node,
             output_dim=self.lemm_emb.shape[-1],
             weights=[self.lemm_emb],
-            embeddings_constraint=emb_const,
+            embeddings_constraint=embed_const,
             name="lemm_emb")(lemm)
         upos = Embedding(
             input_dim=len(self.upos2idx),
             input_length=num_node,
-            output_dim=upos_emb_dim,
-            embeddings_initializer=emb_init,
-            embeddings_constraint=emb_const,
+            output_dim=upos_embed_dim,
+            embeddings_initializer=embed_init,
+            embeddings_constraint=embed_const,
             name="upos_emb")(upos)
         drel = Embedding(
             input_dim=len(self.drel2idx),
             input_length=num_node - 2,
-            output_dim=drel_emb_dim,
-            embeddings_initializer=emb_init,
-            embeddings_constraint=emb_const,
+            output_dim=drel_embed_dim,
+            embeddings_initializer=embed_init,
+            embeddings_constraint=embed_const,
             name="drel_emb")(drel)
         form = Flatten(name="form_flat")(form)
         lemm = Flatten(name="lemm_flat")(lemm)
         upos = Flatten(name="upos_flat")(upos)
         drel = Flatten(name="drel_flat")(drel)
-        if emb_dropout:
-            form = Dropout(name="form_dropout", rate=emb_dropout)(form)
-            lemm = Dropout(name="lemm_dropout", rate=emb_dropout)(lemm)
-            upos = Dropout(name="upos_dropout", rate=emb_dropout)(upos)
-            drel = Dropout(name="drel_dropout", rate=emb_dropout)(drel)
+        if embed_dropout:
+            form = Dropout(name="form_dropout", rate=embed_dropout)(form)
+            lemm = Dropout(name="lemm_dropout", rate=embed_dropout)(lemm)
+            upos = Dropout(name="upos_dropout", rate=embed_dropout)(upos)
+            drel = Dropout(name="drel_dropout", rate=embed_dropout)(drel)
         o = Concatenate(name="inputs")([form, lemm, upos, drel, feat])
         o = Dense(
             units=hidden_units,
