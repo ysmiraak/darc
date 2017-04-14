@@ -1,5 +1,3 @@
-* architecture
-
 - max-norm on embeddings
 
 - max-norm on hidden
@@ -7,20 +5,3 @@
 - two hidden layers
 
 - with full deprel
-
-* silver training
-
-- run udpipe tagger on gold-train to produce silver-train
-
-- pretrain embeddings on silver-train: 32 dim form 32 dim lemma; 64 dim form for
-  =ug=, =en_lines=, =sv_lines=, =id=, =pt_br=, =ko=
-
-- make setups from silver-train and embeddings (tune proj)
-
-- make models from setups and save them with the necessary data from setups
-
-- finally test.conllu -> udpipe model -> darc model
-
-* troubles
-
-- surprise languages

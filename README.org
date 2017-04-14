@@ -1,0 +1,25 @@
+for [[the conll 2017 shared task][http://universaldependencies.org/conll17/]]
+
+* train tokenizers and taggers with [[https://github.com/ufal/udpipe][udpipe]]
+
+  and run on the gold standard =train= to produce =silver-train=
+
+* train embeddings with [[https://github.com/wlin12/wang2vec][wang2vec]]
+
+  on =silver-train=
+
+** 64 dim form embeddings for
+
+   =ug= =en_lines= =sv_lines= =id= =pt_br= =ko=
+
+** 32 dim form embeddings & 32 dim lemma embeddings for
+
+   the rest
+
+* train darc models
+
+  on =silver-train=
+
+** with =param_proj.json= for
+
+** with =param_nonp.json= for

@@ -5,12 +5,12 @@ def parse_args():
     """-> argparse.Namespace"""
     import argparse
     parser = argparse.ArgumentParser(description="the graph is darc and full of errors.")
-    parser.add_argument('--train', help="conllu files for training", nargs='*')
-    parser.add_argument('--param', help="json parameter file for training")
+    parser.add_argument('--model', help="npy model file to save with --train and to load with --parse")
     parser.add_argument('--parse', help="conllu files to be parsed", nargs='*')
     parser.add_argument('--outfile', help="paths for the parsed files", nargs='*')
     parser.add_argument('--concat-outfiles', action='store_true')
-    parser.add_argument('--model', help="npy model file to save with --train and to load with --parse")
+    parser.add_argument('--train', help="conllu files for training", nargs='*')
+    parser.add_argument('--param', help="json parameter file for training")
     parser.add_argument('--form-w2v', help="word2vec file for form embeddings")
     parser.add_argument('--form-w2v-is-binary', action='store_true')
     parser.add_argument('--lemm-w2v', help="word2vec file for lemma embeddings")
