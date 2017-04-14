@@ -4,11 +4,17 @@ for [[http://universaldependencies.org/conll17/][the conll 2017 shared task]]
 
 ** train tokenizers and taggers with [[https://github.com/ufal/udpipe][udpipe]]
 
-   and run on the gold standard =train= to produce =silver-train=
+   and run on the gold standard =train= to produce =silver-train=:
+   
+   we used the =(detokenized-)baselinemodel-splits=, but took both =train= and
+   =tune= for =train=, and =dev= for =tune=. and we used the same parameters as
+   the baseline models.
 
 ** train embeddings with [[https://github.com/wlin12/wang2vec][wang2vec]]
 
-   on =silver-train=
+   on =silver-train=:
+
+   =-type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20=
 
 *** 64 dim form embeddings for
 
@@ -22,8 +28,12 @@ for [[http://universaldependencies.org/conll17/][the conll 2017 shared task]]
 
    on =silver-train=
 
-*** with =param_proj.json= for
+*** with =--proj= for
 
-*** with =param_nonp.json= for
+    ????
+
+*** without =--proj= for
+
+    the rest
 
 * parse
