@@ -1,10 +1,8 @@
-from ud2 import path
-from setup import Setup
-from conllu import load, save
-
-
 def ready(lang, suffix):
-    setup = Setup.load("./setups/{}{}.npy".format(lang, suffix))
+    from ud2 import path
+    from setup import Setup
+    from conllu import load, save
+    setup = Setup.load("./0000/setup/{}{}.npy".format(lang, suffix))
     dev = list(load(path(lang, 'dev')))
 
     def train(infix="", epochs=10, **kwargs):
@@ -12,7 +10,7 @@ def ready(lang, suffix):
         for epoch in range(epochs):
             setup.train(model, verbose=2)
             save((setup.parse(model, sent) for sent in dev),
-                 "./results/{}{}-e{:0>2d}.conllu".format(lang, infix, epoch))
+                 "./0000/result/{}{}-e{:0>2d}.conllu".format(lang, infix, epoch))
 
     return train
 
@@ -28,14 +26,21 @@ if '__main__' == __name__:
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
 
-    hidden = int(argv[2])
-    dropout = float(argv[3])
+    norm = argv[2]
 
-    infix = "-hidden_{}-dropout_{}-relu".format(hidden, dropout)
-    print(lang, infix)
+    infix = "-embed_const_{}".format(norm)
+    print(lang, suffix, infix)
 
     train = ready(lang, suffix)
     train(infix, 16,
-          hidden_units=hidden,
-          dense_dropout=dropout,
-          activation='relu')
+          embed_const=norm,
+          # hidden_layers=2,
+          # hidden_units=256,
+          # hidden_bias='zeros',
+          # hidden_init='orthogonal',
+          # hidden_const=None,
+          # hidden_dropout=0.25,
+          # activation='relu',
+          # output_init='orthogonal',
+          # output_const=None,
+    ):
