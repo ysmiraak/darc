@@ -5,6 +5,7 @@ from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
+from keras.initializers import Constant
 
 
 class Setup(object):
@@ -119,13 +120,13 @@ class Setup(object):
               embed_dropout=0.25,
               hidden_layers=2,
               hidden_units=256,
-              hidden_bias='zeros',
+              hidden_bias=0.0,
               hidden_init='orthogonal',
-              hidden_const=None,
+              hidden_const='none',
               hidden_dropout=0.25,
               activation='relu',
               output_init='orthogonal',
-              output_const=None,
+              output_const='none',
               optimizer='adamax'):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
@@ -134,27 +135,20 @@ class Setup(object):
         assert 0 <= hidden_layers
         assert 0 < hidden_units or 0 == hidden_layers
         assert 0 <= hidden_dropout < 1
-        try:
-            embed_const = float(embed_const)
-            assert 0 <= embed_const
-            if embed_const:
-                embed_const = max_norm(embed_const)
-        except (TypeError, ValueError):
-            pass
-        try:
-            hidden_const = float(hidden_const)
-            assert 0 <= hidden_const
-            if hidden_const:
-                hidden_const = max_norm(hidden_const)
-        except (TypeError, ValueError):
-            pass
-        try:
-            output_const = float(output_const)
-            assert 0 <= output_const
-            if output_const:
-                output_const = max_norm(output_const)
-        except (TypeError, ValueError):
-            pass
+
+        def const(x):
+            try:
+                x = float(x)
+                assert 0 < x
+                return max_norm(x)
+            except (TypeError, ValueError):
+                if isinstance(x, str) and "none" == x.lower():
+                    return None
+
+        embed_const = const(embed_const)
+        hidden_const = const(hidden_const)
+        output_const = const(output_const)
+        
         form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
         lemm = Input(name="lemm", shape=self.x[1].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x[2].shape[1:], dtype=np.uint8)
@@ -201,7 +195,7 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                bias_initializer=hidden_bias,
+                bias_initializer=Constant(hidden_bias),
                 kernel_initializer=hidden_init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
@@ -348,7 +342,7 @@ class Setup(object):
     def load(file):
         """-> Setup"""
         return Setup(**np.load(file).item())
-
+    
 
 # lang, proj = 'kk', False
 # from darc import ud2

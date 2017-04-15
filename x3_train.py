@@ -27,7 +27,9 @@ if '__main__' == __name__:
 
     norm = argv[2]
 
-    infix = "-embed_const_{}".format(norm)
+    bias = float(argv[3])
+
+    infix = "-embed_const_{}-bias_{}".format(norm, bias)
     print(lang, suffix, infix)
 
     train = ready(lang, suffix)
@@ -35,7 +37,7 @@ if '__main__' == __name__:
           embed_const=norm,
           # hidden_layers=2,
           # hidden_units=256,
-          # hidden_bias='zeros',
+          hidden_bias=bias,
           # hidden_init='orthogonal',
           # hidden_const=None,
           # hidden_dropout=0.25,
