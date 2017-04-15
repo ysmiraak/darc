@@ -17,12 +17,8 @@ def load_model(file):
     """-> Setup | SetupNoLemma, keras.models.Model"""
     import numpy as np
     bean = np.load(file).item()
-    if 'lemm2idx' in bean['setup']:
-        from setup import Setup
-        setup = Setup(bean['setup'])
-    else:
-        from setup_no_lemma import SetupNoLemma
-        setup = SetupNoLemma(bean['setup'])
+    from setup import Setup
+    setup = Setup(bean['setup'])
     from keras.models import model_from_json
     model = model_from_json(bean['model'])
     model.set_weights(bean['weights'])
@@ -41,6 +37,3 @@ if '__main__' == __name__:
         save((setup.parse(sent, model) for sent in load(parse)), write)
         if args.verbose:
             print("written", write)
-
-
-# TODO: adjust to refactoring

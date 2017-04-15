@@ -114,15 +114,18 @@ class Setup(object):
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
+              embed_init='uniform',
+              embed_const='unit_norm',
+              embed_dropout=0.25,
               hidden_layers=2,
               hidden_units=256,
-              embed_init='uniform',
-              dense_init='orthogonal',
-              embed_const='unit_norm',
-              dense_const=None,
-              embed_dropout=0.25,
-              dense_dropout=0.25,
-              activation='tanh',
+              hidden_bias='zeros',
+              hidden_init='orthogonal',
+              hidden_const=None,
+              hidden_dropout=0.25,
+              activation='relu',
+              output_init='orthogonal',
+              output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
@@ -136,7 +139,7 @@ class Setup(object):
         except (TypeError, ValueError):
             pass
         try:
-            dense_const = max_norm(float(dense_const))
+            hidden_const = max_norm(float(hidden_const))
         except (TypeError, ValueError):
             pass
         form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
@@ -185,16 +188,17 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                kernel_initializer=dense_init,
-                kernel_constraint=dense_const,
+                bias_initializer=hidden_bias,
+                kernel_initializer=hidden_init,
+                kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
             if dense_dropout:
-                o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=dense_dropout)(o)
+                o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=hidden_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer=dense_init,
-            kernel_constraint=dense_const,
+            kernel_initializer=output_init,
+            kernel_constraint=output_const,
             name="output")(o)
         m = Model(i, o, name="darc")
         m.compile(optimizer, 'categorical_crossentropy')
