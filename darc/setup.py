@@ -199,7 +199,7 @@ class Setup(object):
                 kernel_initializer=hidden_init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
-            if dense_dropout:
+            if hidden_dropout:
                 o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=hidden_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),

@@ -25,11 +25,13 @@ if '__main__' == __name__:
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
 
-    norm = argv[2]
+    # norm = argv[2]
 
-    bias = float(argv[3])
+    init = argv[2]
 
-    infix = "-embed_const_{}-bias_{}".format(norm, bias)
+    norm = 'unitnorm'
+
+    infix = "-embed_const_{}-{}".format(norm, init)
     print(lang, suffix, infix)
 
     train = ready(lang, suffix)
@@ -37,11 +39,11 @@ if '__main__' == __name__:
           embed_const=norm,
           # hidden_layers=2,
           # hidden_units=256,
-          hidden_bias=bias,
-          # hidden_init='orthogonal',
+          # hidden_bias=bias,
+          hidden_init=init,
           # hidden_const=None,
           # hidden_dropout=0.25,
           # activation='relu',
-          # output_init='orthogonal',
+          output_init=init,
           # output_const=None,
-    ):
+    )
