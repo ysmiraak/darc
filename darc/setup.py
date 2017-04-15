@@ -130,16 +130,29 @@ class Setup(object):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
         assert 0 <= drel_embed_dim
+        assert 0 <= embed_dropout < 1
         assert 0 <= hidden_layers
         assert 0 < hidden_units or 0 == hidden_layers
-        assert 0 <= embed_dropout < 1
-        assert 0 <= dense_dropout < 1
+        assert 0 <= hidden_dropout < 1
         try:
-            embed_const = max_norm(float(embed_const))
+            embed_const = float(embed_const)
+            assert 0 <= embed_const
+            if embed_const:
+                embed_const = max_norm(embed_const)
         except (TypeError, ValueError):
             pass
         try:
-            hidden_const = max_norm(float(hidden_const))
+            hidden_const = float(hidden_const)
+            assert 0 <= hidden_const
+            if hidden_const:
+                hidden_const = max_norm(hidden_const)
+        except (TypeError, ValueError):
+            pass
+        try:
+            output_const = float(output_const)
+            assert 0 <= output_const
+            if output_const:
+                output_const = max_norm(output_const)
         except (TypeError, ValueError):
             pass
         form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
