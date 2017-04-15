@@ -1,3 +1,4 @@
+from conllu import Sent
 from itertools import repeat
 from bisect import bisect_left, insort_right
 
@@ -20,7 +21,7 @@ class Config(object):
             input=list(range(n - 1, 0, -1)),
             stack=[0],
             graph=[[] for _ in range(n)],
-            deprel=list(repeat("_", n)))
+            deprel=list(repeat(Sent.dumb, n)))
 
     def is_terminal(self):
         """-> bool"""
@@ -72,14 +73,10 @@ class Config(object):
             for d in graph[0][1:]:
                 insort_right(graph[h], d)
                 deprel[d] = 'parataxis'
-        head = list(repeat(0, len(graph)))
+        head = list(repeat(Sent.dumb, len(graph)))
         for h, ds in enumerate(graph):
             for d in ds:
                 head[d] = h
-            # try:
-            #     deprel[h] = deprel[h][:deprel[h].index(":")]
-            # except ValueError:
-            #     pass
         return self.sent._replace(head=tuple(head), deprel=tuple(deprel))
 
 

@@ -89,3 +89,6 @@ if '__main__' == __name__:
              'weights': model.get_weights()})
     if args.verbose:
         print("saved model", args.model)
+
+
+# TODO: adjust to refactoring

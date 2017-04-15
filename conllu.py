@@ -2,20 +2,18 @@ from collections import namedtuple
 
 
 cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', 'feats', 'head', 'deprel', 'deps', 'misc'
-Sent = namedtuple('Sent', ('multi', ) + cols)
+Sent = namedtuple('Sent', cols + ('multi', ))
 Sent.cols = cols
 del cols
-
-# id=0 serves as root; form="", lemma="", upostag="", xpostag="", feats="" used
-# by setup as sentinel for missing nodes; head=0, deprel="_" as default in
-# transition for consistency; deps=None and misc=None serve no purpose.
-Sent.dumb = 0, "", "", "", "", "", 0, "_", None, None
+Sent.obsc = "_"
+Sent.root = "\xa0"
+Sent.dumb = ""
 
 
-def cons(lines, dumb=Sent.dumb):
+def cons(lines, dumb=Sent.dumb, udrel=True):
     """[str] -> Sent"""
     multi = []
-    nodes = [dumb]
+    nodes = [[0, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb]]
     for line in lines:
         node = line.split("\t")
         assert 10 == len(node)
@@ -29,19 +27,20 @@ def cons(lines, dumb=Sent.dumb):
                 node[6] = int(node[6])
             except ValueError:
                 pass
-            try:  # acl:relcl -> acl
-                node[7] = node[7][:node[7].index(":")]
-            except ValueError:
-                pass
+            if udrel:
+                try:  # acl:relcl -> acl
+                    node[7] = node[7][:node[7].index(":")]
+                except ValueError:
+                    pass
             nodes.append(node)
-    return Sent(tuple(multi), *zip(*nodes))
+    return Sent(*zip(*nodes), tuple(multi))
 
 
 Sent.cons = cons
 del cons
 
 
-def load(file, dumb=Sent.dumb):
+def load(file, dumb=Sent.dumb, udrel=True):
     """-> iter([Sent])"""
     with open(file, encoding='utf-8') as file:
         sent = []
@@ -50,12 +49,12 @@ def load(file, dumb=Sent.dumb):
             if line.startswith("#"):
                 pass
             elif line:
-                sent.append(line)
+                sent.append(line.replace(" ", "\xa0"))
             elif sent:
-                yield Sent.cons(sent, dumb)
+                yield Sent.cons(sent, dumb, udrel)
                 sent = []
         if sent:
-            yield Sent.cons(sent, dumb)
+            yield Sent.cons(sent, dumb, udrel)
 
 
 def save(sents, file):
@@ -66,13 +65,13 @@ def save(sents, file):
             w, m = 1, 0
             while w < len(sent.id):
                 if m < len(multi_idx) and w == multi_idx[m]:
-                    file.write(sent.multi[m])
-                    file.write("\n")
+                    line = sent.multi[m]
                     m += 1
                 else:
-                    file.write("\t".join([str(getattr(sent, col)[w]) for col in Sent.cols]))
-                    file.write("\n")
+                    line = "\t".join([str(getattr(sent, col)[w]) for col in Sent.cols])
                     w += 1
+                file.write(line.replace("\xa0", " "))
+                file.write("\n")
             file.write("\n")
 
 

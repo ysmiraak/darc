@@ -41,3 +41,6 @@ if '__main__' == __name__:
         save((setup.parse(sent, model) for sent in load(parse)), write)
         if args.verbose:
             print("written", write)
+
+
+# TODO: adjust to refactoring

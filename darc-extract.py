@@ -19,8 +19,7 @@ def parse_args():
     return args
 
 
-def extract(conllu, form, lemm, verbose, load, counter):
-    root = 0, "</s>", "</s>", "ROOT", "ROOT", "Root=Yes", 0, "pseudo", None, None
+def extract(conllu, form, lemm, verbose, root, load, counter):
     if verbose:
         print("loading", conllu, "....")
     sents = list(load(conllu, dumb=root))
@@ -50,7 +49,7 @@ if '__main__' == __name__:
         args.form = repeat(None)
     if not args.lemm:
         args.lemm = repeat(None)
-    from conllu import load
+    from conllu import Sent, load
     from collections import Counter
     for conllu, form, lemm in zip(args.data, args.form, args.lemm):
-        stuff(conllu, form, lemm, verbose=args.verbose, load=load, counter=Counter)
+        extract(conllu, form, lemm, verbose, Sent.root, load, Counter)

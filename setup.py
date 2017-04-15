@@ -1,4 +1,3 @@
-from itertools import repeat
 from transition import Config, Oracle
 from conllu import Sent, load
 import numpy as np
@@ -13,52 +12,42 @@ class Setup(object):
     __slots__ = 'idx2tran', 'form2idx', 'lemm2idx', 'upos2idx', 'drel2idx', \
                 'feat2idx', 'form_emb', 'lemm_emb', 'x', 'y'
 
-    dumb_form, root_form, obsc_form = Sent.dumb[1], "</s>", "_"
-    dumb_lemm, root_lemm, obsc_lemm = Sent.dumb[2], "</s>", "_"
-    dumb_upos, root_upos = Sent.dumb[3], "ROOT"
-    dumb_feat, root_feat = Sent.dumb[5], "Root=Yes"
-    dumb_drel = Sent.dumb[7]
-
     def __init__(self, **kwargs):
         super().__init__()
         for attr, val in kwargs.items():
             setattr(self, attr, val)
 
     @staticmethod
-    def cons(sents, form_w2v, lemm_w2v, proj=False):
+    def cons(sents, form_w2v, lemm_w2v=None, proj=False):
         """[Sent], gensim.models.keyedvectors.KeyedVectors -> Setup"""
+        specials = Sent.dumb, Sent.root, Sent.obsc
         # form_emb form2idx
-        specials = Setup.dumb_form, Setup.root_form, Setup.obsc_form
-        pad = 0
-        for form in specials:
-            if form not in form_w2v.vocab:
-                pad += 1
+        pad = [s for s in specials if s not in form_w2v.vocab]
         voc, dim = form_w2v.syn0.shape
-        form_emb = np.zeros((pad + voc, dim), np.float32)
+        form_emb = np.zeros((voc + len(pad), dim), np.float32)
         form_emb[:len(form_w2v.index2word)] = form_w2v.syn0
         form2idx = {form: idx for idx, form in enumerate(form_w2v.index2word)}
         del form_w2v
-        for form in specials:
-            if form not in form2idx:
-                form2idx[form] = len(form2idx)
+        for form in pad:
+            form2idx[form] = len(form2idx)
         # lemm_emb lemm2idx
-        specials = Setup.dumb_lemm, Setup.root_lemm, Setup.obsc_lemm
-        pad = 0
-        for lemm in specials:
-            if lemm not in lemm_w2v.vocab:
-                pad += 1
-        voc, dim = lemm_w2v.syn0.shape
-        lemm_emb = np.zeros((pad + voc, dim), np.float32)
-        lemm_emb[:len(lemm_w2v.index2word)] = lemm_w2v.syn0
-        lemm2idx = {lemm: idx for idx, lemm in enumerate(lemm_w2v.index2word)}
-        del lemm_w2v
-        for lemm in specials:
-            if lemm not in lemm2idx:
-                lemm2idx[lemm] = len(lemm2idx)
+        if lemm_w2v:
+            pad = [s for s in specials if s not in lemm_w2v.vocab]
+            voc, dim = lemm_w2v.syn0.shape
+            lemm_emb = np.zeros((voc + len(pad), dim), np.float32)
+            lemm_emb[:len(lemm_w2v.index2word)] = lemm_w2v.syn0
+            lemm2idx = {lemm: idx for idx, lemm in enumerate(lemm_w2v.index2word)}
+            del lemm_w2v
+        else:
+            pad = specials
+            lemm_emb = None
+            lemm2idx = {}
+        for lemm in pad:
+            lemm2idx[lemm] = len(lemm2idx)
         # upos2idx feat2idx drel2idx idx2tran
-        upos2idx = {Setup.dumb_upos: 0, Setup.root_upos: 1}
-        feat2idx = {Setup.dumb_feat: 0, Setup.root_feat: 1}
-        drel2idx = {}
+        upos2idx = {Sent.dumb: 0, Sent.root: 1, 'X': 2}
+        feat2idx = {Sent.dumb: 0, Sent.root: 1}
+        drel2idx = {Sent.dumb: 0}
         idx2tran = [('shift', None)]
         if not hasattr(sents, '__len__'):
             sents = list(sents)
@@ -75,7 +64,6 @@ class Setup(object):
                     drel2idx[drel] = len(drel2idx)
                     idx2tran.append(('left', drel))
                     idx2tran.append(('right', drel))
-        drel2idx[Setup.dumb_drel] = len(drel2idx)
         if not proj:
             idx2tran.append(('swap', None))
         # x y
@@ -115,78 +103,72 @@ class Setup(object):
         return self
 
     @staticmethod
-    def make(train_conllu, form_w2v, lemm_w2v, binary=True, proj=False):
+    def make(train_conllu, form_w2v, lemm_w2v=None, binary=True, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
-            load(train_conllu), 
+            load(train_conllu),  proj=proj,
             form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
-            lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary),
-            proj=proj)
+            lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary)
+            if lemm_w2v else None)
 
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
-              hidden_units=200,
+              hidden_layers=2,
+              hidden_units=256,
               embed_init='uniform',
               dense_init='orthogonal',
               embed_const='unit_norm',
               dense_const=None,
               embed_dropout=0.25,
-              dense_dropout=0.0,
+              dense_dropout=0.25,
               activation='tanh',
               optimizer='adamax'):
         """-> keras.models.Model"""
-        assert 0 < upos_embed_dim
-        assert 0 < drel_embed_dim
+        assert 0 <= upos_embed_dim
+        assert 0 <= drel_embed_dim
+        assert 0 <= hidden_layers
+        assert 0 < hidden_units or 0 == hidden_layers
         assert 0 <= embed_dropout < 1
         assert 0 <= dense_dropout < 1
         try:
-            float(embed_const)
+            embed_const = max_norm(float(embed_const))
         except (TypeError, ValueError):
             pass
-        else:
-            embed_const = max_norm(embed_const)
         try:
-            float(dense_const)
+            dense_const = max_norm(float(dense_const))
         except (TypeError, ValueError):
             pass
-        else:
-            dense_const = max_norm(dense_const)
-        num_node = 18
-        form = Input(name="form", shape=(num_node, ), dtype=np.uint16)
-        lemm = Input(name="lemm", shape=(num_node, ), dtype=np.uint16)
-        upos = Input(name="upos", shape=(num_node, ), dtype=np.uint8)
-        drel = Input(name="drel", shape=(num_node - 2, ), dtype=np.uint8)
-        feat = Input(name="feat", shape=(num_node * len(self.feat2idx), ))
+        form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
+        lemm = Input(name="lemm", shape=self.x[1].shape[1:], dtype=np.uint16)
+        upos = Input(name="upos", shape=self.x[2].shape[1:], dtype=np.uint8)
+        drel = Input(name="drel", shape=self.x[3].shape[1:], dtype=np.uint8)
+        feat = Input(name="feat", shape=self.x[4].shape[1:], dtype=np.float32)
         i = [form, lemm, upos, drel, feat]
         form = Embedding(
             input_dim=len(self.form2idx),
-            input_length=num_node,
             output_dim=self.form_emb.shape[-1],
             weights=[self.form_emb],
             embeddings_constraint=embed_const,
-            name="form_emb")(form)
+            name="form_embed")(form)
         lemm = Embedding(
             input_dim=len(self.lemm2idx),
-            input_length=num_node,
             output_dim=self.lemm_emb.shape[-1],
             weights=[self.lemm_emb],
             embeddings_constraint=embed_const,
-            name="lemm_emb")(lemm)
+            name="lemm_embed")(lemm) if self.lemm_emb is not None else form
         upos = Embedding(
             input_dim=len(self.upos2idx),
-            input_length=num_node,
             output_dim=upos_embed_dim,
             embeddings_initializer=embed_init,
             embeddings_constraint=embed_const,
-            name="upos_emb")(upos)
+            name="upos_embed")(upos)
         drel = Embedding(
             input_dim=len(self.drel2idx),
-            input_length=num_node - 2,
             output_dim=drel_embed_dim,
             embeddings_initializer=embed_init,
             embeddings_constraint=embed_const,
-            name="drel_emb")(drel)
+            name="drel_embed")(drel)
         form = Flatten(name="form_flat")(form)
         lemm = Flatten(name="lemm_flat")(lemm)
         upos = Flatten(name="upos_flat")(upos)
@@ -196,15 +178,18 @@ class Setup(object):
             lemm = Dropout(name="lemm_dropout", rate=embed_dropout)(lemm)
             upos = Dropout(name="upos_dropout", rate=embed_dropout)(upos)
             drel = Dropout(name="drel_dropout", rate=embed_dropout)(drel)
-        o = Concatenate(name="inputs")([form, lemm, upos, drel, feat])
-        o = Dense(
-            units=hidden_units,
-            activation=activation,
-            kernel_initializer=dense_init,
-            kernel_constraint=dense_const,
-            name="hidden")(o)
-        if dense_dropout:
-            o = Dropout(name="hidden_dropout", rate=dense_dropout)(o)
+        o = Concatenate(name="concat")(
+            [form, lemm, upos, drel, feat] if self.lemm_emb is not None else
+            [form, upos, drel, feat])
+        for hid in range(hidden_layers):
+            o = Dense(
+                units=hidden_units,
+                activation=activation,
+                kernel_initializer=dense_init,
+                kernel_constraint=dense_const,
+                name="hidden{}".format(1 + hid))(o)
+            if dense_dropout:
+                o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=dense_dropout)(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
@@ -247,14 +232,14 @@ class Setup(object):
         assert feat.shape == (18 * len(self.feat2idx), )
 
         """
-        num_node = 18
         # 18 features (Chen & Manning 2014)
         #  0: s0       1: s1       2: s0l1     3: s1l1     4: s0r1     5: s1r1
         #  6: s0l0     7: s1l0     8: s0r0     9: s1r0
         # 10: s0l0l1  11: s1l0l1  12: s0r0r1  13: s1r0r1
         # 14: s2      15: i0      16: i1      17: i2
         i, s, g = config.input, config.stack, config.graph
-        x = list(repeat(0, num_node))  # node 0 in each sent is dumb
+        x = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]
+        # node 0 in each sent is dumb
         if 1 <= len(s):
             x[0] = s[-1]  # s0
             y = g[x[0]]
@@ -297,9 +282,9 @@ class Setup(object):
         form2idx = self.form2idx.get
         lemm2idx = self.lemm2idx.get
         upos2idx = self.upos2idx.get
-        form_unk = form2idx(self.obsc_form)
-        lemm_unk = lemm2idx(self.obsc_lemm)
-        upos_unk = upos2idx(self.dumb_upos)
+        form_unk = form2idx(Sent.obsc)
+        lemm_unk = lemm2idx(Sent.obsc)
+        upos_unk = upos2idx('X')  # upos is never _
         form = config.sent.form
         lemm = config.sent.lemma
         upos = config.sent.upostag
@@ -315,19 +300,19 @@ class Setup(object):
         feats = [feats[i] for i in x]
         # special treatments for root
         if 2 <= len(s) and 0 == s[-2]:
+            root = Sent.root
             # s1 at idx 1 is root
-            form[1] = form2idx(self.root_form)
-            lemm[1] = lemm2idx(self.root_lemm)
-            upos[1] = upos2idx(self.root_upos)
-            feats[1] = self.root_feat
+            form[1] = form2idx(root)
+            lemm[1] = lemm2idx(root)
+            upos[1] = upos2idx(root)
+            feats[1] = root
         # set-valued feat (Alberti et al. 2015)
         feat2idx = self.feat2idx
-        num_feat = len(feat2idx)
-        feat = np.zeros(num_node * num_feat, np.float32)
+        feat = np.zeros((len(feats), len(feat2idx)), np.float32)
         for idx, fts in enumerate(feats):
             for ft in fts.split("|"):
                 try:
-                    feat[num_feat * idx + feat2idx[ft]] = 1.0
+                    feat[idx, feat2idx[ft]] = 1.0
                 except KeyError:
                     pass
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
@@ -348,14 +333,15 @@ class Setup(object):
         return Setup(**np.load(file).item())
 
 
-# lang, proj = 'kk', False
-# from ud2 import path
-# setup = Setup.make(
-#     path(lang, 'train'),
-#     "./embed/{}-form.w2v".format(lang),
-#     "./embed/{}-lemm.w2v".format(lang),
-#     binary=False,
-#     proj=proj)
-# from keras.utils import plot_model
-# model = setup.model()
-# plot_model(model, to_file=".tmp/model.png")
+lang, proj = 'kk', False
+from ud2 import path
+setup = Setup.make(
+    path(lang, 'train'),
+    "./embed/{}-form.w2v".format(lang),
+    # "./embed/{}-lemm.w2v".format(lang),
+    None,
+    binary=False,
+    proj=proj)
+from keras.utils import plot_model
+model = setup.model()
+plot_model(model, to_file=".tmp/model.png")

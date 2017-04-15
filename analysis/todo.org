@@ -1,7 +1,7 @@
+- relu related adjustments
+
 - max-norm on embeddings
 
 - max-norm on hidden
-
-- two hidden layers
 
 - with full deprel

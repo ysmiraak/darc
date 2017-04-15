@@ -73,3 +73,10 @@ def path(lang, ds='train'):
     """-> str: the path for lang"""
     return "/data/ud-treebanks-conll2017/UD_{}/{}-ud-{}.conllu" \
         .format(treebanks[lang], lang, ds)
+
+
+# from conllu import load
+# from collections import Counter
+# for lang in treebanks:
+#     freq = Counter(upos for sent in load(path(lang)) for upos in sent.upostag)
+#     print("X", freq["X"], "_", freq["_"], lang, sep="\t")
