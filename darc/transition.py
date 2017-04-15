@@ -1,4 +1,4 @@
-from conllu import Sent
+from darc import Sent
 from itertools import repeat
 from bisect import bisect_left, insort_right
 
@@ -162,8 +162,6 @@ class Oracle(object):
             return 'right', self.sent.deprel[j]
         return 'shift', None
 
-
-# from conllu import Sent
 
 # s = Sent.cons(
 #     ["1\tA\t_\t_\t_\t_\t2\tDET\t_\t_",

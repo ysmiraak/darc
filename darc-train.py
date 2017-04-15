@@ -36,12 +36,12 @@ def parse_args():
 
 
 def make_setup(train, proj, form_w2v, lemm_w2v, w2v_is_binary, verbose):
-    """-> Setup | SetupNoLemma"""
+    """-> Setup"""
     if verbose:
         print("training a", "projective" if proj else "non-projective", "parser")
         print("loading", *train, "....")
-    from conllu import load
-    sents = [sent for train in train for sent in load(train)]
+    from darc import conllu
+    sents = [sent for train in train for sent in conllu.load(train)]
     if verbose:
         print("loading", form_w2v, "....")
     from gensim.models.keyedvectors import KeyedVectors
@@ -54,7 +54,7 @@ def make_setup(train, proj, form_w2v, lemm_w2v, w2v_is_binary, verbose):
         lemm_w2v = None
     if verbose:
         print("preparing training data ....")
-    from setup import Setup
+    from darc.setup import Setup
     return Setup.cons(sents=sents, proj=proj, form_w2v=form_w2v, lemm_w2v=lemm_w2v)
 
 

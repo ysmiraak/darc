@@ -1,16 +1,15 @@
 def ready(lang, suffix):
-    from ud2 import path
-    from setup import Setup
-    from conllu import load, save
-    setup = Setup.load("./0000/setup/{}{}.npy".format(lang, suffix))
-    dev = list(load(path(lang, 'dev')))
+    from darc import conllu, ud2
+    from darc.setup import Setup
+    setup = Setup.load("./lab/setup/{}{}.npy".format(lang, suffix))
+    dev = list(conllu.load(ud2.path(lang, 'dev')))
 
     def train(infix="", epochs=10, **kwargs):
         model = setup.model(**kwargs)
         for epoch in range(epochs):
             setup.train(model, verbose=2)
-            save((setup.parse(model, sent) for sent in dev),
-                 "./0000/result/{}{}-e{:0>2d}.conllu".format(lang, infix, epoch))
+            conllu.save((setup.parse(model, sent) for sent in dev),
+                        "./lab/result/{}{}-e{:0>2d}.conllu".format(lang, infix, epoch))
 
     return train
 

@@ -17,7 +17,7 @@ w2v() {
         -binary 1
 }
 
-path="./0000/embed/"
+path="./lab/embed/"
 
 # lang="la_proiel"
 # lang="he"

@@ -1,5 +1,5 @@
-from transition import Config, Oracle
-from conllu import Sent, load
+from darc import Sent, conllu
+from darc.transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
@@ -106,7 +106,7 @@ class Setup(object):
     def make(train_conllu, form_w2v, lemm_w2v=None, binary=True, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
-            load(train_conllu),  proj=proj,
+            conllu.load(train_conllu),  proj=proj,
             form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
             lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary)
             if lemm_w2v else None)
@@ -338,14 +338,12 @@ class Setup(object):
 
 
 # lang, proj = 'kk', False
-# from ud2 import path
+# from darc import ud2
 # setup = Setup.make(
-#     path(lang, 'train'),
-#     "./embed/{}-form.w2v".format(lang),
-#     # "./embed/{}-lemm.w2v".format(lang),
-#     None,
-#     binary=False,
-#     proj=proj)
+#     ud2.path(lang, 'train'), proj=proj,
+#     form_w2v="../lab/embed/{}-form.w2v".format(lang),
+#     lemm_w2v="../lab/embed/{}-lemm.w2v".format(lang),
+#     binary=False)
 # from keras.utils import plot_model
 # model = setup.model()
-# plot_model(model, to_file=".tmp/model.png")
+# plot_model(model, to_file="../lab/model.png")

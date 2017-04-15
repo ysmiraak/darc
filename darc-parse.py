@@ -14,10 +14,10 @@ def parse_args():
 
 
 def load_model(file):
-    """-> Setup | SetupNoLemma, keras.models.Model"""
+    """-> Setup, keras.models.Model"""
     import numpy as np
     bean = np.load(file).item()
-    from setup import Setup
+    from darc.setup import Setup
     setup = Setup(bean['setup'])
     from keras.models import model_from_json
     model = model_from_json(bean['model'])
@@ -30,10 +30,10 @@ if '__main__' == __name__:
     if args.verbose:
         print("loading", args.model, "....")
     setup, model = load_model(args.model)
-    from conllu import load, save
+    from darc import conllu
     for parse, write in zip(args.parse, args.write):
         if args.verbose:
             print("parsing", parse, "....")
-        save((setup.parse(sent, model) for sent in load(parse)), write)
+        conllu.save((setup.parse(sent, model) for sent in conllu.load(parse)), write)
         if args.verbose:
             print("written", write)
