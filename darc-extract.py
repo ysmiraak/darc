@@ -52,4 +52,4 @@ if '__main__' == __name__:
     from conllu import Sent, load
     from collections import Counter
     for conllu, form, lemm in zip(args.data, args.form, args.lemm):
-        extract(conllu, form, lemm, verbose, Sent.root, load, Counter)
+        extract(conllu, form, lemm, args.verbose, Sent.root, load, Counter)

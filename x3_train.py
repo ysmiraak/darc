@@ -19,13 +19,23 @@ def ready(lang, suffix):
 
 if '__main__' == __name__:
     from sys import argv
-    
-    lang, suffix = 'la_proiel', '-nonp'
+
+    if 'la' == argv[1]:
+        lang, suffix = 'la_proiel', '-nonp'
+    else:
+        lang, suffix = 'he', '-proj'
     # lang, suffix = 'fa', 'nonp'
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
-    
-    w = 4, 5, 6, 7, 8
-    infix = "-w{}s1n8i16".format(w[int(argv[1])])
-    train = ready(lang, suffix + infix)
-    train(infix, 16)
+
+    hidden = int(argv[2])
+    dropout = float(argv[3])
+
+    infix = "-hidden_{}-dropout_{}-relu".format(hidden, dropout)
+    print(lang, infix)
+
+    train = ready(lang, suffix)
+    train(infix, 16,
+          hidden_units=hidden,
+          dense_dropout=dropout,
+          activation='relu')

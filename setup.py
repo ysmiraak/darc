@@ -333,15 +333,15 @@ class Setup(object):
         return Setup(**np.load(file).item())
 
 
-lang, proj = 'kk', False
-from ud2 import path
-setup = Setup.make(
-    path(lang, 'train'),
-    "./embed/{}-form.w2v".format(lang),
-    # "./embed/{}-lemm.w2v".format(lang),
-    None,
-    binary=False,
-    proj=proj)
-from keras.utils import plot_model
-model = setup.model()
-plot_model(model, to_file=".tmp/model.png")
+# lang, proj = 'kk', False
+# from ud2 import path
+# setup = Setup.make(
+#     path(lang, 'train'),
+#     "./embed/{}-form.w2v".format(lang),
+#     # "./embed/{}-lemm.w2v".format(lang),
+#     None,
+#     binary=False,
+#     proj=proj)
+# from keras.utils import plot_model
+# model = setup.model()
+# plot_model(model, to_file=".tmp/model.png")
