@@ -75,8 +75,8 @@ def save(sents, file):
             file.write("\n")
 
 
-# from darc import ud2
+# import src_ud2 as ud2
 # sents = list(load(ud2.path('de', 'dev')))
-# save(sents, "../lab/tmp.conllu")
-# sents2 = list(load("../lab/tmp.conllu"))
+# save(sents, "./lab/tmp.conllu")
+# sents2 = list(load("./lab/tmp.conllu"))
 # assert sents == sents2

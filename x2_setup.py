@@ -1,7 +1,7 @@
 def setup(lang, proj=False, embed_path="./lab/embed/", setup_path="./lab/setup/"):
-    from darc import ud2
-    from darc.setup import Setup
-    # from darc import conllu
+    import src_ud2 as ud2
+    from src_setup import Setup
+    # import src_conllu as conllu
     # conllu.save(conllu.load(ud2.path(lang, 'dev')), "./lab/gold/{}-ud-dev.conllu".format(lang))
     Setup.make(ud2.path(lang, 'train'), proj=proj, binary=True,
                form_w2v="{}{}.form".format(embed_path, lang),

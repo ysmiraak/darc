@@ -16,7 +16,6 @@ def parse_args():
     parser.add_argument('--embed-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--hidden-layers', type=int, default=2, help="default: 2")
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
-    parser.add_argument('--hidden-bias', type=float, default=0.0, help="default: 0.0")
     parser.add_argument('--hidden-init', default='orthogonal', help="default: orthogonal")
     parser.add_argument('--hidden-const', default='none', help="default: none")
     parser.add_argument('--hidden-dropout', type=float, default=0.25, help="default: 0.25")
@@ -40,7 +39,7 @@ def make_setup(train, proj, form_w2v, lemm_w2v, w2v_is_binary, verbose):
     if verbose:
         print("training a", "projective" if proj else "non-projective", "parser")
         print("loading", *train, "....")
-    from darc import conllu
+    import src_conllu as conllu
     sents = [sent for train in train for sent in conllu.load(train)]
     if verbose:
         print("loading", form_w2v, "....")
@@ -54,7 +53,7 @@ def make_setup(train, proj, form_w2v, lemm_w2v, w2v_is_binary, verbose):
         lemm_w2v = None
     if verbose:
         print("preparing training data ....")
-    from darc.setup import Setup
+    from src_setup import Setup
     return Setup.cons(sents=sents, proj=proj, form_w2v=form_w2v, lemm_w2v=lemm_w2v)
 
 
@@ -76,7 +75,6 @@ if '__main__' == __name__:
         embed_dropout=args.embed_dropout,
         hidden_layers=args.hidden_layers,
         hidden_units=args.hidden_units,
-        hidden_bias=args.hidden_bias,
         hidden_init=args.hidden_init,
         hidden_const=args.hidden_const,
         hidden_dropout=args.hidden_dropout,

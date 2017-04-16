@@ -17,7 +17,7 @@ def load_model(file):
     """-> Setup, keras.models.Model"""
     import numpy as np
     bean = np.load(file).item()
-    from darc.setup import Setup
+    from src_setup import Setup
     setup = Setup(bean['setup'])
     from keras.models import model_from_json
     model = model_from_json(bean['model'])
@@ -30,7 +30,7 @@ if '__main__' == __name__:
     if args.verbose:
         print("loading", args.model, "....")
     setup, model = load_model(args.model)
-    from darc import conllu
+    import src_conllu as conllu
     for parse, write in zip(args.parse, args.write):
         if args.verbose:
             print("parsing", parse, "....")

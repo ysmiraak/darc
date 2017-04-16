@@ -49,7 +49,7 @@ if '__main__' == __name__:
         args.form = repeat(None)
     if not args.lemm:
         args.lemm = repeat(None)
-    from darc import Sent, conllu
+    from src_conllu import Sent, load
     from collections import Counter
     for data, form, lemm in zip(args.data, args.form, args.lemm):
-        extract(data, form, lemm, args.verbose, Sent.root, conllu.load, Counter)
+        extract(data, form, lemm, args.verbose, Sent.root, load, Counter)

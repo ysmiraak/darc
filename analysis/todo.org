@@ -1,8 +1,12 @@
-- try bias-init=1
+- figure out if embed & hidden & output should all have the same init
+  + try he-uniform init on embeddings
+  + try ortho init on output
 
-- try he initializers
+- try batch normalization
 
-- max-norm on hidden
+- constraint on hidden
+
+- constraint on output
 
 - with full deprel
 

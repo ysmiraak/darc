@@ -1,4 +1,4 @@
-from darc import Sent
+from src_conllu import Sent
 from itertools import repeat
 from bisect import bisect_left, insort_right
 
@@ -203,11 +203,11 @@ class Oracle(object):
 #         getattr(c, act)(arg)
 #     assert s == c.finish()
 
-# from conllu import load
+# import src_conllu as conllu
 # from glob import glob
 # for file in glob("/data/ud-treebanks-conll2017/*/*.conllu"):
-#     print("testing oracle on", file, "...")
-#     for i, s in enumerate(load(file)):
+#     print("testing oracle on", file, "....")
+#     for i, s in enumerate(conllu.load(file)):
 #         try:
 #             test_oracle(s, False)
 #         except Exception:

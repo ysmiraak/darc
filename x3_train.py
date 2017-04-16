@@ -1,6 +1,7 @@
 def ready(lang, suffix):
-    from darc import conllu, ud2
-    from darc.setup import Setup
+    import src_conllu as conllu
+    import src_ud2 as ud2
+    from src_setup import Setup
     setup = Setup.load("./lab/setup/{}{}.npy".format(lang, suffix))
     dev = list(conllu.load(ud2.path(lang, 'dev')))
 
@@ -25,21 +26,33 @@ if '__main__' == __name__:
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
 
-    norm = argv[2]
+    hidden_init = 'he_uniform'
+    if 0 == float(argv[2]):
+        embed_init = 'he_uniform'
+        output_init = 'he_uniform'
+        infix = "-embed_init_he_uniform"
+    else:
+        embed_init = 'uniform'
+        output_init = 'orthogonal'
+        infix = "-output_init_orthogonal"
 
-    infix = "-embed_const_{}".format(norm)
+    # dense_init = argv[2]
+    # infix = "-bn_{}"
+
     print(lang, suffix, infix)
-
     train = ready(lang, suffix)
     train(infix, 16,
-          embed_const=norm,
           # hidden_layers=2,
           # hidden_units=256,
-          hidden_bias=1.0,
-          hidden_init='he_uniform',
+
+          # hidden_dropout=0,
+          # hidden_bn=True,
+
+          embed_init=embed_init,
+          hidden_init=hidden_init,
+          output_init=output_init,
+
+          # embed_const='unitnorm',
           # hidden_const=None,
-          # hidden_dropout=0.25,
-          # activation='relu',
-          output_init='he_uniform',
           # output_const=None,
     )

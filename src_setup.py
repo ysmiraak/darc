@@ -1,11 +1,12 @@
-from darc import Sent, conllu
-from darc.transition import Config, Oracle
+import src_conllu as conllu
+from src_conllu import Sent
+from src_transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
-from keras.initializers import Constant
+from keras.layers.normalization import BatchNormalization
 
 
 class Setup(object):
@@ -115,16 +116,20 @@ class Setup(object):
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
+
               embed_init='uniform',
               embed_const='unit_norm',
               embed_dropout=0.25,
+
               hidden_layers=2,
               hidden_units=256,
-              hidden_bias=0.0,
               hidden_init='orthogonal',
               hidden_const=None,
               hidden_dropout=0.25,
+              hidden_bn=False,
+              
               activation='relu',
+
               output_init='orthogonal',
               output_const=None,
               optimizer='adamax'):
@@ -196,12 +201,14 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                bias_initializer=Constant(hidden_bias),
+                bias_initializer='ones' if 'relu' == activation else 'zeros',
                 kernel_initializer=hidden_init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
             if hidden_dropout:
                 o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=hidden_dropout)(o)
+            elif hidden_bn:
+                o = BatchNormalization(name="hidden{}_bn".format(1 + hid))(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
@@ -346,12 +353,12 @@ class Setup(object):
     
 
 # lang, proj = 'kk', False
-# from darc import ud2
+# import src_ud2 as ud2
 # setup = Setup.make(
 #     ud2.path(lang, 'train'), proj=proj,
-#     form_w2v="../lab/embed/{}-form.w2v".format(lang),
-#     lemm_w2v="../lab/embed/{}-lemm.w2v".format(lang),
+#     form_w2v="./lab/embed/{}-form.w2v".format(lang),
+#     lemm_w2v="./lab/embed/{}-lemm.w2v".format(lang),
 #     binary=False)
 # from keras.utils import plot_model
 # model = setup.model()
-# plot_model(model, to_file="../lab/model.png")
+# plot_model(model, to_file="./lab/model.png")

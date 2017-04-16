@@ -75,7 +75,7 @@ def path(lang, ds='train'):
         .format(treebanks[lang], lang, ds)
 
 
-# from darc import conllu
+# import src_conllu as conllu
 # from collections import Counter
 # for lang in treebanks:
 #     freq = Counter(upos for sent in conllu.load(path(lang)) for upos in sent.upostag)
