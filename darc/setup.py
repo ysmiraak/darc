@@ -122,11 +122,11 @@ class Setup(object):
               hidden_units=256,
               hidden_bias=0.0,
               hidden_init='orthogonal',
-              hidden_const='none',
+              hidden_const=None,
               hidden_dropout=0.25,
               activation='relu',
               output_init='orthogonal',
-              output_const='none',
+              output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
@@ -140,10 +140,11 @@ class Setup(object):
             try:
                 x = float(x)
                 assert 0 < x
-                return max_norm(x)
+                x = max_norm(x)
             except (TypeError, ValueError):
                 if isinstance(x, str) and "none" == x.lower():
-                    return None
+                    x = None
+            return x
 
         embed_const = const(embed_const)
         hidden_const = const(hidden_const)
