@@ -350,8 +350,8 @@ use he-uniform and bias init
 
 * try different init for different layers
 
-a embed:uniform;hidden:he-uniform;output:he-uniform
-b embed:he-uniform;hidden:he-uniform;output:he-uniform
+a embed:uniform;hidden:he-uniform;output:he-uniform \\
+b embed:he-uniform;hidden:he-uniform;output:he-uniform \\
 c embed:uniform;hidden:he-uniform;output:orthogonal
 
 he proj

@@ -1,5 +1,3 @@
-- constraint on hidden
-
 - constraint on output
 
 - with full deprel

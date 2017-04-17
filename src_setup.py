@@ -118,24 +118,26 @@ class Setup(object):
               drel_embed_dim=16,
               hidden_units=256,
               hidden_layers=2,
-              
               activation='relu',
               init='he_uniform',
-
               embed_const='unit_norm',
               embed_dropout=0.25,
               hidden_const=None,
               hidden_dropout=0.25,
               output_const=None,
-              
               optimizer='adamax'):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
         assert 0 <= drel_embed_dim
-        assert 0 <= embed_dropout < 1
         assert 0 <= hidden_layers
         assert 0 < hidden_units or 0 == hidden_layers
+        assert 0 <= embed_dropout < 1
         assert 0 <= hidden_dropout < 1
+
+        if 'relu' == activation and 'orthogonal' == init:
+            hidden_init = Orthogonal(2 ** 0.5)
+        else:
+            hidden_init = init
 
         def const(x):
             try:
@@ -146,16 +148,6 @@ class Setup(object):
                 if isinstance(x, str) and "none" == x.lower():
                     x = None
             return x
-
-        if 'relu' == activation:
-            if 'orthogonal' == init:
-                hidden_init = Orthogonal(2 ** 0.5)
-            else:
-                hidden_init = init
-            if 'uniform' in init or 'normal' in init:
-                hidden_bias = 'ones'
-            else:
-                hidden_bias = 'zeros'
 
         embed_const = const(embed_const)
         hidden_const = const(hidden_const)
@@ -182,13 +174,11 @@ class Setup(object):
         upos = Embedding(
             input_dim=len(self.upos2idx),
             output_dim=upos_embed_dim,
-            embeddings_initializer=init,
             embeddings_constraint=embed_const,
             name="upos_embed")(upos)
         drel = Embedding(
             input_dim=len(self.drel2idx),
             output_dim=drel_embed_dim,
-            embeddings_initializer=init,
             embeddings_constraint=embed_const,
             name="drel_embed")(drel)
         form = Flatten(name="form_flat")(form)
@@ -207,7 +197,7 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                bias_initializer=hidden_bias,
+                bias_initializer='ones' if 'relu' == activation else 'zeros',
                 kernel_initializer=hidden_init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
