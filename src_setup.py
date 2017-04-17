@@ -6,7 +6,6 @@ from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
-from keras.layers.normalization import BatchNormalization
 from keras.initializers import Orthogonal
 
 
@@ -119,7 +118,6 @@ class Setup(object):
               drel_embed_dim=16,
               hidden_units=256,
               hidden_layers=2,
-              hidden_bn=False,
               
               activation='relu',
               init='he_uniform',
@@ -149,8 +147,15 @@ class Setup(object):
                     x = None
             return x
 
-        if 'relu' == activation and 'orthogonal' == init:
-            init = Orthogonal(2 ** 0.5)
+        if 'relu' == activation:
+            if 'orthogonal' == init:
+                hidden_init = Orthogonal(2 ** 0.5)
+            else:
+                hidden_init = init
+            if 'uniform' in init or 'normal' in init:
+                hidden_bias = 'ones'
+            else:
+                hidden_bias = 'zeros'
 
         embed_const = const(embed_const)
         hidden_const = const(hidden_const)
@@ -202,14 +207,12 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                bias_initializer='ones' if 'relu' == activation else 'zeros',
-                kernel_initializer=init,
+                bias_initializer=hidden_bias,
+                kernel_initializer=hidden_init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
             if hidden_dropout:
                 o = Dropout(name="hidden{}_dropout".format(1 + hid), rate=hidden_dropout)(o)
-            elif hidden_bn:
-                o = BatchNormalization(name="hidden{}_bn".format(1 + hid))(o)
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
