@@ -29,20 +29,20 @@ if '__main__' == __name__:
     from src_conllu import Sent
     import src_conllu as conllu
     for data, form, lemm in zip(args.data, args.form, args.lemm):
-        if verbose:
+        if args.verbose:
             print("loading", data, "....")
         sents = list(conllu.load(data, dumb=Sent.root))
         if form:
             with open(form, 'w', encoding='utf-8') as file:
-                for line in conllu.extract(sents, col='form'):
+                for line in conllu.select(sents, col='form'):
                     file.write(" ".join(line))
                     file.write("\n")
-            if verbose:
+            if args.verbose:
                 print("written", form, "....")
         if lemm:
             with open(lemm, 'w', encoding='utf-8') as file:
-                for line in conllu.extract(sents, col='lemma'):
+                for line in conllu.select(sents, col='lemma'):
                     file.write(" ".join(line))
                     file.write("\n")
-            if verbose:
+            if args.verbose:
                 print("written", lemm, "....")

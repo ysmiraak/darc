@@ -6,7 +6,6 @@ from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model, model_from_json
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
-from keras.initializers import Orthogonal
 
 
 class Setup(object):
@@ -134,11 +133,6 @@ class Setup(object):
         assert 0 <= embed_dropout < 1
         assert 0 <= hidden_dropout < 1
 
-        if 'relu' == activation and 'orthogonal' == init:
-            hidden_init = Orthogonal(2 ** 0.5)
-        else:
-            hidden_init = init
-
         def const(x):
             try:
                 x = float(x)
@@ -198,7 +192,7 @@ class Setup(object):
                 units=hidden_units,
                 activation=activation,
                 bias_initializer='ones' if 'relu' == activation else 'zeros',
-                kernel_initializer=hidden_init,
+                kernel_initializer=init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
             if hidden_dropout:
@@ -337,7 +331,7 @@ class Setup(object):
                 (Setup.__slots__ if with_data else Setup.__slots__[:-4])}
         if model is not None:
             bean['model'] = model.to_json()
-            beam['weights'] = model.get_weights()
+            bean['weights'] = model.get_weights()
         np.save(file, bean)
 
     @staticmethod

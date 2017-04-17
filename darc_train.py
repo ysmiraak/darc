@@ -14,9 +14,7 @@ def parse_args():
     parser.add_argument('--hidden-layers', type=int, default=2, help="default: 2")
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
     parser.add_argument('--activation', default='relu', help="default: relu")
-
-    parser.add_argument('--init', default='orthogonal', help="default: orthogonal")
-
+    parser.add_argument('--init', default='he_uniform', help="default: he_uniform")
     parser.add_argument('--embed-const', default='unitnorm', help="default: unitnorm")
     parser.add_argument('--embed-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--hidden-const', default='none', help="default: none")

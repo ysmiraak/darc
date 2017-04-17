@@ -69,10 +69,10 @@ no_dev = {'kk', 'ug', 'uk', 'ga', 'gl_treegal', 'fr_partut', 'la', 'sl_sst'}
 
 no_lemma = {'en_lines', 'id', 'sv_lines', 'ug', 'pt_br', 'ko'}
 
-def path(lang, ds='train'):
+def path(lang, ds='train', folder="/data/ud-treebanks-conll2017/"):
     """-> str: the path for lang"""
-    return "/data/ud-treebanks-conll2017/UD_{}/{}-ud-{}.conllu" \
-        .format(treebanks[lang], lang, ds)
+    return "{}UD_{}/{}-ud-{}.conllu" \
+        .format(folder, treebanks[lang], lang, ds)
 
 
 # import src_conllu as conllu
