@@ -1,9 +1,3 @@
-- figure out if embed & hidden & output should all have the same init
-  + try he-uniform init on embeddings
-  + try ortho init on output
-
-- try batch normalization
-
 - constraint on hidden
 
 - constraint on output

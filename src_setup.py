@@ -116,22 +116,19 @@ class Setup(object):
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
-
-              embed_init='uniform',
-              embed_const='unit_norm',
-              embed_dropout=0.25,
-
-              hidden_layers=2,
               hidden_units=256,
-              hidden_init='orthogonal',
-              hidden_const=None,
-              hidden_dropout=0.25,
+              hidden_layers=2,
               hidden_bn=False,
               
               activation='relu',
+              init='he_uniform'
 
-              output_init='orthogonal',
+              embed_const='unit_norm',
+              embed_dropout=0.25,
+              hidden_const=None,
+              hidden_dropout=0.25,
               output_const=None,
+              
               optimizer='adamax'):
         """-> keras.models.Model"""
         assert 0 <= upos_embed_dim
@@ -176,13 +173,13 @@ class Setup(object):
         upos = Embedding(
             input_dim=len(self.upos2idx),
             output_dim=upos_embed_dim,
-            embeddings_initializer=embed_init,
+            embeddings_initializer=init,
             embeddings_constraint=embed_const,
             name="upos_embed")(upos)
         drel = Embedding(
             input_dim=len(self.drel2idx),
             output_dim=drel_embed_dim,
-            embeddings_initializer=embed_init,
+            embeddings_initializer=init,
             embeddings_constraint=embed_const,
             name="drel_embed")(drel)
         form = Flatten(name="form_flat")(form)
@@ -202,7 +199,7 @@ class Setup(object):
                 units=hidden_units,
                 activation=activation,
                 bias_initializer='ones' if 'relu' == activation else 'zeros',
-                kernel_initializer=hidden_init,
+                kernel_initializer=init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
             if hidden_dropout:
@@ -212,7 +209,7 @@ class Setup(object):
         o = Dense(
             units=len(self.idx2tran),
             activation='softmax',
-            kernel_initializer=output_init,
+            kernel_initializer=init,
             kernel_constraint=output_const,
             name="output")(o)
         m = Model(i, o, name="darc")
