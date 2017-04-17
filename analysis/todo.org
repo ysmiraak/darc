@@ -1,5 +1,0 @@
-- constraint on output
-
-- with full deprel
-
-- tune dropout rate on 512(x2) units
