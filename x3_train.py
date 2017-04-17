@@ -26,10 +26,10 @@ if '__main__' == __name__:
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
 
-    inits = "orthogonal", "he_normal", "he_uniform"
-    init = inits[int(argv[2])]
+    # unit 2 3 4 5 6
+    hidden_const = argv[2]
     
-    infix = "-init_{}".format(init)
+    infix = "-hidden_const_{}".format(hidden_const)
 
     print(lang, suffix, infix)
     train = ready(lang, suffix)
@@ -37,8 +37,6 @@ if '__main__' == __name__:
           # hidden_layers=2,
           # hidden_units=256,
 
-          init=init,
-
-          # hidden_const=None,
+          hidden_const=hidden_const,
           # output_const=None,
     )

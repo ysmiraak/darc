@@ -3,7 +3,7 @@ lang="grc_proiel"
 
 embed="./lab/embed/"
 
-python darc-extract.py -v \
+python darc_extract.py -v \
        --data $train \
        --form $embed$lang".form.raw" \
        --lemm $embed$lang".lemm.raw"
