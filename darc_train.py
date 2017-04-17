@@ -11,16 +11,16 @@ def parse_args():
     parser.add_argument('--proj', action='store_true', help="train a projective parser")
     parser.add_argument('--upos-embed-dim', type=int, default=12, help="default: 12")
     parser.add_argument('--drel-embed-dim', type=int, default=16, help="default: 16")
-    parser.add_argument('--embed-init', default='uniform', help="default: uniform")
-    parser.add_argument('--embed-const', default='unitnorm', help="default: unitnorm")
-    parser.add_argument('--embed-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--hidden-layers', type=int, default=2, help="default: 2")
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
-    parser.add_argument('--hidden-init', default='orthogonal', help="default: orthogonal")
+    parser.add_argument('--activation', default='relu', help="default: relu")
+
+    parser.add_argument('--init', default='orthogonal', help="default: orthogonal")
+
+    parser.add_argument('--embed-const', default='unitnorm', help="default: unitnorm")
+    parser.add_argument('--embed-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--hidden-const', default='none', help="default: none")
     parser.add_argument('--hidden-dropout', type=float, default=0.25, help="default: 0.25")
-    parser.add_argument('--activation', default='relu', help="default: relu")
-    parser.add_argument('--output-init', default='orthogonal', help="default: orthogonal")
     parser.add_argument('--output-const', default='none', help="default: none")
     parser.add_argument('--optimizer', default='adamax', help="default: adamax")
     parser.add_argument('--epochs', type=int, default=12, help="default: 12")
@@ -68,25 +68,19 @@ if '__main__' == __name__:
         proj=args.proj,
         verbose=args.verbose)
     model = setup.model(
-        upos_embed_dim=args.upos_embed_dim,
-        drel_embed_dim=args.drel_embed_dim,
-        embed_init=args.embed_init,
-        embed_const=args.embed_const,
-        embed_dropout=args.embed_dropout,
-        hidden_layers=args.hidden_layers,
-        hidden_units=args.hidden_units,
-        hidden_init=args.hidden_init,
-        hidden_const=args.hidden_const,
-        hidden_dropout=args.hidden_dropout,
-        activation=args.activation,
-        output_init=args.output_init,
-        output_const=args.output_const,
+        upos_embed_dim=args.upos_embed_dim
+        drel_embed_dim=args.drel_embed_dim
+        hidden_units=args.hidden_units
+        hidden_layers=args.hidden_layers
+        activation=args.activation
+        init=args.init
+        embed_const=args.embed_const
+        embed_dropout=args.embed_dropout
+        hidden_const=args.hidden_const
+        hidden_dropout=args.hidden_dropout
+        output_const=args.output_const
         optimizer=args.optimizer)
     setup.train(model, epochs=args.epochs, verbose=args.verbose)
-    import numpy as np
-    np.save(args.model,
-            {'setup': setup.bean(with_data=False),
-             'model': model.to_json(),
-             'weights': model.get_weights()})
+    setup.save(args.model, model, with_data=False)
     if args.verbose:
         print("saved model", args.model)

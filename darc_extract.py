@@ -19,29 +19,6 @@ def parse_args():
     return args
 
 
-def extract(conllu, form, lemm, verbose, root, load, counter):
-    if verbose:
-        print("loading", conllu, "....")
-    sents = list(load(conllu, dumb=root))
-    if form:
-        freq = counter(form for sent in sents for form in sent.form)
-        with open(form, 'w', encoding='utf-8') as file:
-            for sent in sents:
-                file.write(" ".join([form if 1 != freq[form] else "_" for form in sent.form]))
-                file.write("\n")
-        if verbose:
-            print("written", form, "....")
-        del freq
-    if lemm:
-        freq = counter(lemm for sent in sents for lemm in sent.lemma)
-        with open(lemm, 'w', encoding='utf-8') as file:
-            for sent in sents:
-                file.write(" ".join([lemm if 1 != freq[lemm] else "_" for lemm in sent.lemma]))
-                file.write("\n")
-        if verbose:
-            print("written", lemm, "....")
-
-
 if '__main__' == __name__:
     args = parse_args()
     from itertools import repeat
@@ -49,7 +26,23 @@ if '__main__' == __name__:
         args.form = repeat(None)
     if not args.lemm:
         args.lemm = repeat(None)
-    from src_conllu import Sent, load
-    from collections import Counter
+    from src_conllu import Sent
+    import src_conllu as conllu
     for data, form, lemm in zip(args.data, args.form, args.lemm):
-        extract(data, form, lemm, args.verbose, Sent.root, load, Counter)
+        if verbose:
+            print("loading", data, "....")
+        sents = list(conllu.load(data, dumb=Sent.root))
+        if form:
+            with open(form, 'w', encoding='utf-8') as file:
+                for line in conllu.extract(sents, col='form'):
+                    file.write(" ".join(line))
+                    file.write("\n")
+            if verbose:
+                print("written", form, "....")
+        if lemm:
+            with open(lemm, 'w', encoding='utf-8') as file:
+                for line in conllu.extract(sents, col='lemma'):
+                    file.write(" ".join(line))
+                    file.write("\n")
+            if verbose:
+                print("written", lemm, "....")

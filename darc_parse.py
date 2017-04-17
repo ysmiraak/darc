@@ -13,23 +13,12 @@ def parse_args():
     return args
 
 
-def load_model(file):
-    """-> Setup, keras.models.Model"""
-    import numpy as np
-    bean = np.load(file).item()
-    from src_setup import Setup
-    setup = Setup(bean['setup'])
-    from keras.models import model_from_json
-    model = model_from_json(bean['model'])
-    model.set_weights(bean['weights'])
-    return setup, model
-
-
 if '__main__' == __name__:
     args = parse_args()
     if args.verbose:
         print("loading", args.model, "....")
-    setup, model = load_model(args.model)
+    from src_setup import Setup
+    setup, model = Setup.load(args.model, with_model=True)
     import src_conllu as conllu
     for parse, write in zip(args.parse, args.write):
         if args.verbose:

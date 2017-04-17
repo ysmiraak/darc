@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, Counter
 
 
 cols = 'id', 'form', 'lemma', 'upostag', 'xpostag', 'feats', 'head', 'deprel', 'deps', 'misc'
@@ -58,7 +58,7 @@ def load(file, dumb=Sent.dumb, udrel=True):
 
 
 def save(sents, file):
-    """sents: [Sent]"""
+    """as conllu file"""
     with open(file, 'w', encoding='utf-8') as file:
         for sent in sents:
             multi_idx = [int(multi[:multi.index("-")]) for multi in sent.multi]
@@ -73,6 +73,13 @@ def save(sents, file):
                 file.write(line.replace("\xa0", " "))
                 file.write("\n")
             file.write("\n")
+
+
+def select(sents, col='form', min_freq=2, obsc=Sent.obsc):
+    """-> iter([[str]])"""
+    freq = Counter(x for sent in sents for x in getattr(sent, col))
+    for sent in sents:
+        yield [x if min_freq <= freq[x] else obsc for x in getattr(sent, col)]
 
 
 # import src_ud2 as ud2

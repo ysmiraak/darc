@@ -3,7 +3,7 @@ from src_conllu import Sent
 from src_transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
-from keras.models import Model
+from keras.models import Model, model_from_json
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
 from keras.initializers import Orthogonal
@@ -152,7 +152,7 @@ class Setup(object):
         embed_const = const(embed_const)
         hidden_const = const(hidden_const)
         output_const = const(output_const)
-        
+
         form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
         lemm = Input(name="lemm", shape=self.x[1].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x[2].shape[1:], dtype=np.uint8)
@@ -331,20 +331,28 @@ class Setup(object):
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
         return [form, lemm, upos, drel, feat]  # model.predict takes list
 
-    def bean(self, with_data=True):
-        """-> dict"""
-        return {attr: getattr(self, attr) for attr in
-                (Setup.__slots__ if with_data else Setup.__slots__[:-4])}
-
-    def save(self, file, with_data=True):
+    def save(self, file, model=None, with_data=True):
         """as npy file"""
-        np.save(file, self.bean(with_data))
+        bean = {attr: getattr(self, attr) for attr in
+                (Setup.__slots__ if with_data else Setup.__slots__[:-4])}
+        if model is not None:
+            bean['model'] = model.to_json()
+            beam['weights'] = model.get_weights()
+        np.save(file, bean)
 
     @staticmethod
-    def load(file):
-        """-> Setup"""
-        return Setup(**np.load(file).item())
-    
+    def load(file, with_model=False):
+        """str, False -> Setup; str, True -> Setup, keras.models.Model"""
+        bean = np.load(file).item()
+        if with_model:
+            model = model_from_json(bean['model'])
+            model.set_weights(bean['weights'])
+            del bean['weights']
+            del bean['model']
+            return Setup(**bean), model
+        else:
+            return  Setup(**bean)
+
 
 # lang, proj = 'kk', False
 # import src_ud2 as ud2
