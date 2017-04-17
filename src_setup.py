@@ -7,6 +7,7 @@ from keras.models import Model
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.constraints import max_norm
 from keras.layers.normalization import BatchNormalization
+from keras.initializers import Orthogonal
 
 
 class Setup(object):
@@ -147,6 +148,9 @@ class Setup(object):
                 if isinstance(x, str) and "none" == x.lower():
                     x = None
             return x
+
+        if 'relu' == activation and 'orthogonal' == init:
+            init = Orthogonal(2 ** 0.5)
 
         embed_const = const(embed_const)
         hidden_const = const(hidden_const)
