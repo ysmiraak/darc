@@ -122,7 +122,7 @@ class Setup(object):
               hidden_bn=False,
               
               activation='relu',
-              init='he_uniform'
+              init='he_uniform',
 
               embed_const='unit_norm',
               embed_dropout=0.25,

@@ -26,18 +26,10 @@ if '__main__' == __name__:
     # lang, suffix = 'grc_proiel', 'nonp'
     # lang, suffix = 'zh', 'proj'
 
-    hidden_init = 'he_uniform'
-    if 0 == float(argv[2]):
-        embed_init = 'he_uniform'
-        output_init = 'he_uniform'
-        infix = "-embed_init_he_uniform"
-    else:
-        embed_init = 'uniform'
-        output_init = 'orthogonal'
-        infix = "-output_init_orthogonal"
-
-    # dense_init = argv[2]
-    # infix = "-bn_{}"
+    inits = "orthogonal", "he_normal", "he_uniform"
+    init = inits[int(argv[2])]
+    
+    infix = "-init_{}".format(init)
 
     print(lang, suffix, infix)
     train = ready(lang, suffix)
@@ -45,14 +37,8 @@ if '__main__' == __name__:
           # hidden_layers=2,
           # hidden_units=256,
 
-          # hidden_dropout=0,
-          # hidden_bn=True,
+          init=init,
 
-          embed_init=embed_init,
-          hidden_init=hidden_init,
-          output_init=output_init,
-
-          # embed_const='unitnorm',
           # hidden_const=None,
           # output_const=None,
     )
