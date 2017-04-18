@@ -119,7 +119,7 @@ class Setup(object):
               hidden_layers=2,
               activation='relu',
               init='he_uniform',
-              embed_init='uniform'
+              embed_init='uniform',
               embed_const='unit_norm',
               embed_dropout=0.25,
               hidden_const=None,
