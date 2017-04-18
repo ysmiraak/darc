@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
     parser.add_argument('--activation', default='relu', help="default: relu")
     parser.add_argument('--init', default='he_uniform', help="default: he_uniform")
-    parser.add_argument('--embed-init', default='uniform', help="default: uniform")
+    parser.add_argument('--embed-init-max', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--embed-const', default='unitnorm', help="default: unitnorm")
     parser.add_argument('--embed-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--hidden-const', default='none', help="default: none")
@@ -67,18 +67,18 @@ if '__main__' == __name__:
         proj=args.proj,
         verbose=args.verbose)
     model = setup.model(
-        upos_embed_dim=args.upos_embed_dim
-        drel_embed_dim=args.drel_embed_dim
-        hidden_units=args.hidden_units
-        hidden_layers=args.hidden_layers
-        activation=args.activation
-        init=args.init
-        embed_init=args.embed_init
-        embed_const=args.embed_const
-        embed_dropout=args.embed_dropout
-        hidden_const=args.hidden_const
-        hidden_dropout=args.hidden_dropout
-        output_const=args.output_const
+        upos_embed_dim=args.upos_embed_dim,
+        drel_embed_dim=args.drel_embed_dim,
+        hidden_units=args.hidden_units,
+        hidden_layers=args.hidden_layers,
+        activation=args.activation,
+        init=args.init,
+        embed_init_max=args.embed_init_max,
+        embed_const=args.embed_const,
+        embed_dropout=args.embed_dropout,
+        hidden_const=args.hidden_const,
+        hidden_dropout=args.hidden_dropout,
+        output_const=args.output_const,
         optimizer=args.optimizer)
     setup.train(model, epochs=args.epochs, verbose=args.verbose)
     setup.save(args.model, model, with_data=False)

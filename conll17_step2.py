@@ -28,6 +28,8 @@ def train_save(setup, suffix):
 
 
 if '__main__' == __name__:
-    lang = argv[1]
-    train_save(make_setup(lang, False), "-nonp")
-    train_save(make_setup(lang, True), "-proj")
+    for lang in argv[1:]:
+        print("{}-nonp".format(lang))
+        train_save(make_setup(lang, False), "-nonp")
+        print("{}-proj".format(lang))
+        train_save(make_setup(lang, True), "-proj")

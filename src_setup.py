@@ -5,6 +5,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from keras.models import Model, model_from_json
 from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
+from keras.initializers import uniform
 from keras.constraints import max_norm
 
 
@@ -119,7 +120,7 @@ class Setup(object):
               hidden_layers=2,
               activation='relu',
               init='he_uniform',
-              embed_init='uniform',
+              embed_init_max=0.5,
               embed_const='unit_norm',
               embed_dropout=0.25,
               hidden_const=None,
@@ -127,11 +128,19 @@ class Setup(object):
               output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model"""
+        upos_embed_dim = int(upos_embed_dim)
         assert 0 <= upos_embed_dim
+        drel_embed_dim = int(drel_embed_dim)
         assert 0 <= drel_embed_dim
-        assert 0 <= hidden_layers
+        hidden_units = int(hidden_units)
         assert 0 < hidden_units or 0 == hidden_layers
+        hidden_layers = int(hidden_layers)
+        assert 0 <= hidden_layers
+        embed_init_max = float(embed_init_max)
+        assert 0 <= embed_init_max
+        embed_dropout = float(embed_dropout)
         assert 0 <= embed_dropout < 1
+        hidden_dropout = float(hidden_dropout)
         assert 0 <= hidden_dropout < 1
 
         def const(x):
@@ -144,9 +153,10 @@ class Setup(object):
                     x = None
             return x
 
-        embed_const = const(embed_const)
-        hidden_const = const(hidden_const)
         output_const = const(output_const)
+        hidden_const = const(hidden_const)
+        embed_const = const(embed_const)
+        embed_init = uniform(minval=-embed_init_max, maxval=embed_init_max)
 
         form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
         lemm = Input(name="lemm", shape=self.x[1].shape[1:], dtype=np.uint16)
