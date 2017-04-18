@@ -82,7 +82,7 @@ class Setup(object):
             tran2idx[tran] = hotv
         data = [], [], [], [], [], []
         form_append, lemm_append, upos_append, drel_append, feat_append, \
-            tran_append, = [d.append for d in data]
+            tran_append, = (d.append for d in data)
         for sent in sents:
             oracle = Oracle.cons(sent, proj=proj)
             config = Config.cons(sent)
@@ -119,6 +119,7 @@ class Setup(object):
               hidden_layers=2,
               activation='relu',
               init='he_uniform',
+              embed_init='uniform'
               embed_const='unit_norm',
               embed_dropout=0.25,
               hidden_const=None,
@@ -168,11 +169,13 @@ class Setup(object):
         upos = Embedding(
             input_dim=len(self.upos2idx),
             output_dim=upos_embed_dim,
+            embeddings_initializer=embed_init,
             embeddings_constraint=embed_const,
             name="upos_embed")(upos)
         drel = Embedding(
             input_dim=len(self.drel2idx),
             output_dim=drel_embed_dim,
+            embeddings_initializer=embed_init,
             embeddings_constraint=embed_const,
             name="drel_embed")(drel)
         form = Flatten(name="form_flat")(form)
@@ -352,8 +355,8 @@ class Setup(object):
 # import src_ud2 as ud2
 # setup = Setup.make(
 #     ud2.path(lang, 'train'), proj=proj,
-#     form_w2v="./lab/embed/{}-form.w2v".format(lang),
-#     lemm_w2v="./lab/embed/{}-lemm.w2v".format(lang),
+#     form_w2v="./lab/pretrained_w2v/{}-form.w2v".format(lang),
+#     lemm_w2v="./lab/pretrained_w2v/{}-lemm.w2v".format(lang),
 #     binary=False)
 # from keras.utils import plot_model
 # model = setup.model()
