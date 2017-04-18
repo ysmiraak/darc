@@ -10,7 +10,7 @@ Sent.root = "\xa0"
 Sent.dumb = ""
 
 
-def cons(lines, dumb=Sent.dumb, udrel=True):
+def cons(lines, dumb=Sent.dumb, udrel=False):
     """[str] -> Sent"""
     multi = []
     nodes = [[0, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb]]
@@ -40,7 +40,7 @@ Sent.cons = cons
 del cons
 
 
-def load(file, dumb=Sent.dumb, udrel=True):
+def load(file, dumb=Sent.dumb, udrel=False):
     """-> iter([Sent])"""
     with open(file, encoding='utf-8') as file:
         sent = []

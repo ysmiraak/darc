@@ -355,9 +355,9 @@ class Setup(object):
 # import src_ud2 as ud2
 # setup = Setup.make(
 #     ud2.path(lang, 'train'), proj=proj,
-#     form_w2v="./lab/pretrained_w2v/{}-form.w2v".format(lang),
-#     lemm_w2v="./lab/pretrained_w2v/{}-lemm.w2v".format(lang),
-#     binary=False)
+#     form_w2v="./lab/pretrain_w2v/{}-form.w2v".format(lang),
+#     lemm_w2v="./lab/pretrain_w2v/{}-lemm.w2v".format(lang),
+#     binary=True)
 # from keras.utils import plot_model
 # model = setup.model()
 # plot_model(model, to_file="./lab/model.png")
