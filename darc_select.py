@@ -36,13 +36,13 @@ if '__main__' == __name__:
             with open(form, 'w', encoding='utf-8') as file:
                 for line in conllu.select(sents, col='form'):
                     file.write(" ".join(line))
-                    file.write("\n")
+                    file.write(" \n")
             if args.verbose:
                 print("written", form, "....")
         if lemm:
             with open(lemm, 'w', encoding='utf-8') as file:
                 for line in conllu.select(sents, col='lemma'):
                     file.write(" ".join(line))
-                    file.write("\n")
+                    file.write(" \n")
             if args.verbose:
                 print("written", lemm, "....")

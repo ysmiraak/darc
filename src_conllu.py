@@ -10,7 +10,7 @@ Sent.root = "\xa0"
 Sent.dumb = ""
 
 
-def cons(lines, dumb=Sent.dumb, udrel=False):
+def cons(lines, dumb=Sent.dumb):
     """[str] -> Sent"""
     multi = []
     nodes = [[0, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb, dumb]]
@@ -27,20 +27,22 @@ def cons(lines, dumb=Sent.dumb, udrel=False):
                 node[6] = int(node[6])
             except ValueError:
                 pass
-            if udrel:
-                try:  # acl:relcl -> acl
-                    node[7] = node[7][:node[7].index(":")]
-                except ValueError:
-                    pass
             nodes.append(node)
     return Sent(*zip(*nodes), tuple(multi))
 
 
+def fmap_x2u_deprel(sent):
+    """-> Sent; acl:relcl -> acl"""
+    return sent._replace(deprel=tuple(drel.split(":")[0] for drel in sent.deprel))
+
+
 Sent.cons = cons
 del cons
+Sent.fmap_x2u_deprel = fmap_x2u_deprel
+del fmap_x2u_deprel
 
 
-def load(file, dumb=Sent.dumb, udrel=False):
+def load(file, dumb=Sent.dumb):
     """-> iter([Sent])"""
     with open(file, encoding='utf-8') as file:
         sent = []
@@ -51,10 +53,10 @@ def load(file, dumb=Sent.dumb, udrel=False):
             elif line:
                 sent.append(line.replace(" ", "\xa0"))
             elif sent:
-                yield Sent.cons(sent, dumb, udrel)
+                yield Sent.cons(sent, dumb)
                 sent = []
         if sent:
-            yield Sent.cons(sent, dumb, udrel)
+            yield Sent.cons(sent, dumb)
 
 
 def save(sents, file):
