@@ -11,8 +11,7 @@ udpipe_model_path="./lab/udpipe_model/"
 silver_train_path="./lab/silver_train/"
 pretrain_w2v_path="./lab/pretrain_w2v/"
 
-# de el en en_partut es es_ancora et
-# eu fa fi fi_ftb fr fr_partut fr_sequoia ga gl gl_treegal got grc grc_proiel he hi hr
+# fi_ftb fr fr_partut fr_sequoia ga gl gl_treegal got grc grc_proiel he hi hr
 # hu it it_partut ja kk la la_ittb la_proiel lv nl nl_lassysmall no_bokmaal no_nynorsk pl
 # pt ro ru ru_syntagrus sk sl sl_sst sv tr uk ur vi zh
 

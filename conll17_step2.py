@@ -28,6 +28,7 @@ def train_save(setup, suffix):
 
 
 if '__main__' == __name__:
+    from sys import argv
     for lang in argv[1:]:
         print("{}-nonp".format(lang))
         train_save(make_setup(lang, False), "-nonp")
