@@ -23,7 +23,8 @@ def train_save(setup, suffix):
     for epoch in range(16):
         setup.train(model, verbose=2)
         if 4 <= epoch:
-            np.save("{}{}{}-e{:0>2d}.npy".format(system_model_path, lang, suffix, epoch),
+            np.save("{}{}{}-e{:0>2d}.npy"
+                    .format(system_model_path, lang, suffix, epoch),
                     {'model': model.to_json(), 'weights': model.get_weights()})
 
 

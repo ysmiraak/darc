@@ -1,30 +1,33 @@
-import src_ud2 as ud2
+import src_conllu as conllu
 from src_setup import Setup
-import json
+from keras.models import Model, model_from_json
+import numpy as np
+
+system_model_path = "./lab/system_model/"
+udpiped_test_path = "./lab/udpiped_test/"
+system_parse_path = "./lab/system_parse/"
 
 
-path = "/media/training-datasets/universal-dependency-learning/"
-in_folder = path + "conll17-ud-trial-2017-03-19/"
-# infolder = path + "conll17-ud-development-2017-03-19/"
-out_folder = "????"
-
-udpipe_model_folder = "????"
-darc_model_folder = "????"
-
-
-def read_meta(metadata):
-    """-> lang, udfile, rawfile, outfile"""
-    lang = metadata['ltcode']
-    udfile = lang + "-udpipe.conllu"
-    rawfile = metadata['rawfile']
-    outfile = metadata['outfile']
-    if lang not in ud2.treebanks:
-        lang = metadata['lcode']
-    if lang not in ud2.treebanks:
-        lang = None
-        # TODO: deal with unknown languages
-    return lang, udfile, rawfile, outfile
+def parse_save(lang, suffix):
+    """parses with setup and models for evaluation"""
+    sents = list(conllu.load("{}{}.conllu".format(udpiped_test_path, lang,)))
+    Setup.load("{}{}{}.npy".format(system_model_path, lang, suffix), with_model=False)
+    for epoch in range(4, 16):
+        bean = np.load("{}{}{}-e{:0>2d}.npy"
+                       .format(system_model_path, lang, suffix, epoch)) \
+                 .item()
+        model = model_from_json(bean['model'])
+        model.set_weights(bean['weights'])
+        del bean
+        conllu.save((setup.parse(model, sent) for sent in sents),
+                    "{}{}{}-e{:0>2d}.conllu"
+                    .format(system_parse_path, lang, suffix, epoch))
 
 
-with open("./lab/metadata.json") as file:
-    metadata = json.load(file)
+if '__main__' == __name__:
+    from sys import argv
+    for lang in argv[1:]:
+        print("{}-nonp".format(lang))
+        parse_save(lang, "-nonp")
+        print("{}-proj".format(lang))
+        parse_save(lang, "-proj")
