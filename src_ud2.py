@@ -65,9 +65,9 @@ treebanks = {
     'zh': 'Chinese',
 }
 
-no_dev = {'kk', 'ug', 'uk', 'ga', 'gl_treegal', 'fr_partut', 'la', 'sl_sst'}
+no_dev = {'fr_partut', 'ga', 'gl_treegal', 'kk', 'la', 'sl_sst', 'ug', 'uk'}
 
-no_lemma = {'en_lines', 'id', 'sv_lines', 'ug', 'pt_br', 'ko'}
+no_lemma = {'en_lines', 'id', 'ko', 'pt_br', 'sv_lines', 'ug'}
 
 def path(lang, ds='train', folder="/data/ud-treebanks-conll2017/"):
     """-> str: the path for lang"""
