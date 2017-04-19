@@ -2,16 +2,15 @@ from src_setup import Setup
 import src_ud2 as ud2
 import numpy as np
 
-silver_train_path = "./lab/silver_train/"
-pretrain_w2v_path = "./lab/pretrain_w2v/"
-system_model_path = "./lab/system_model/"
+silver_train_path = "./conll17/silver_train/"
+system_model_path = "./conll17/system_model/"
 
 
 def make_setup(lang, proj):
     """-> Setup"""
     silver = "{}{}.conllu".format(silver_train_path, lang)
-    form_w2v = "{}{}-form.w2v".format(pretrain_w2v_path, lang)
-    lemm_w2v = "{}{}-lemm.w2v".format(pretrain_w2v_path, lang) \
+    form_w2v = "{}{}-form.w2v".format(silver_train_path, lang)
+    lemm_w2v = "{}{}-lemm.w2v".format(silver_train_path, lang) \
                if lang not in ud2.no_lemma else None
     return Setup.make(silver, form_w2v, lemm_w2v, proj=proj)
 

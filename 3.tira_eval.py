@@ -11,7 +11,7 @@ system_parse_path = "./lab/system_parse/"
 def parse_save(lang, suffix):
     """parses with setup and models for evaluation"""
     sents = list(conllu.load("{}{}.conllu".format(udpiped_test_path, lang,)))
-    Setup.load("{}{}{}.npy".format(system_model_path, lang, suffix), with_model=False)
+    setup = Setup.load("{}{}{}.npy".format(system_model_path, lang, suffix))
     for epoch in range(4, 16):
         bean = np.load("{}{}{}-e{:0>2d}.npy"
                        .format(system_model_path, lang, suffix, epoch)) \
@@ -19,9 +19,10 @@ def parse_save(lang, suffix):
         model = model_from_json(bean['model'])
         model.set_weights(bean['weights'])
         del bean
-        conllu.save((setup.parse(model, sent) for sent in sents),
-                    "{}{}{}-e{:0>2d}.conllu"
-                    .format(system_parse_path, lang, suffix, epoch))
+        outfile = "{}{}{}-e{:0>2d}.conllu" \
+                  .format(system_parse_path, lang, suffix, epoch)
+        conllu.save((setup.parse(model, sent) for sent in sents), outfile)
+        print("written", outfile)
 
 
 if '__main__' == __name__:

@@ -26,5 +26,5 @@ def read_meta(metadata):
     return lang, udfile, rawfile, outfile
 
 
-with open("./lab/metadata.json") as file:
+with open("./conll17/metadata.json") as file:
     metadata = json.load(file)

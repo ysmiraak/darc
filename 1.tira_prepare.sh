@@ -5,11 +5,10 @@
 #  hu id it it_partut ja kk ko la la_ittb la_proiel lv nl nl_lassysmall no_bokmaal no_nynorsk pl
 #  pt pt_br ro ru ru_syntagrus sk sl sl_sst sv sv_lines tr ug uk ur vi zh"
 
-ud2_treebank_path="/data/ud-treebanks-conll2017/"
-udpipe_model_path="./lab/udpipe_model/"
-silver_train_path="./lab/silver_train/"
-pretrain_w2v_path="./lab/pretrain_w2v/"
-udpiped_test_path="./lab/udpiped_test/"
+ud2_treebank_path="/home/darc/ud-treebanks-conll2017/"
+udpipe_model_path="./conll17/udpipe_model/"
+silver_train_path="./conll17/silver_train/"
+udpiped_test_path="./conll17/udpiped_test/"
 
 # hi hr
 # hu id it it_partut ja kk ko la la_ittb la_proiel lv nl nl_lassysmall no_bokmaal no_nynorsk pl
@@ -47,13 +46,13 @@ do
         "en_lines"|"id"|"ko"|"pt_br"|"sv_lines"|"ug")
             python darc_select.py -v \
                    --data ${silver_train_path}${lang}".conllu" \
-                   --form ${pretrain_w2v_path}${lang}"-form.raw"
-          ;;
+                   --form ${silver_train_path}${lang}"-form.raw"
+            ;;
         *)
             python darc_select.py -v \
                    --data ${silver_train_path}${lang}".conllu" \
-                   --form ${pretrain_w2v_path}${lang}"-form.raw" \
-                   --lemm ${pretrain_w2v_path}${lang}"-lemm.raw"
+                   --form ${silver_train_path}${lang}"-form.raw" \
+                   --lemm ${silver_train_path}${lang}"-lemm.raw"
             ;;
     esac
 done
@@ -71,8 +70,8 @@ do
         *)
             word2vec -size 32 \
                      -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
-                     -train ${pretrain_w2v_path}${lang}"-lemm.raw" \
-                     -output ${pretrain_w2v_path}${lang}"-lemm.w2v" \
+                     -train ${silver_train_path}${lang}"-lemm.raw" \
+                     -output ${silver_train_path}${lang}"-lemm.w2v" \
                      -binary 1 -threads 4
             echo
             form_embed_dim=32
@@ -80,8 +79,8 @@ do
     esac
     word2vec -size ${form_embed_dim} \
              -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
-             -train ${pretrain_w2v_path}${lang}"-form.raw" \
-             -output ${pretrain_w2v_path}${lang}"-form.w2v" \
+             -train ${silver_train_path}${lang}"-form.raw" \
+             -output ${silver_train_path}${lang}"-form.w2v" \
              -binary 1 -threads 4
     echo
 done
