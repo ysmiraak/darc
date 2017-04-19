@@ -3,9 +3,9 @@ from src_setup import Setup
 from keras.models import Model, model_from_json
 import numpy as np
 
-system_model_path = "./lab/system_model/"
-udpiped_test_path = "./lab/udpiped_test/"
-system_parse_path = "./lab/system_parse/"
+system_model_path = "./conll17/system_model/"
+udpiped_test_path = "./conll17/udpiped_test/"
+system_parse_path = "./conll17/system_parse/"
 
 
 def parse_save(lang, suffix):

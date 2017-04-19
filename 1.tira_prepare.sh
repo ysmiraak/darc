@@ -72,7 +72,7 @@ do
                      -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
                      -train ${silver_train_path}${lang}"-lemm.raw" \
                      -output ${silver_train_path}${lang}"-lemm.w2v" \
-                     -binary 1 -threads 4
+                     -binary 1 -threads 1
             echo
             form_embed_dim=32
             ;;
@@ -81,6 +81,6 @@ do
              -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
              -train ${silver_train_path}${lang}"-form.raw" \
              -output ${silver_train_path}${lang}"-form.w2v" \
-             -binary 1 -threads 4
+             -binary 1 -threads 1
     echo
 done
