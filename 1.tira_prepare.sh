@@ -10,11 +10,9 @@ udpipe_model_path="./conll17/udpipe_model/"
 silver_train_path="./conll17/silver_train/"
 udpiped_test_path="./conll17/udpiped_test/"
 
-# hi hr
-# hu id it it_partut ja kk ko la la_ittb la_proiel lv nl nl_lassysmall no_bokmaal no_nynorsk pl
-# pt pt_br ro ru ru_syntagrus sk sl sl_sst sv sv_lines tr ug uk ur vi zh
+# no_nynorsk pl pt pt_br ro ru ru_syntagrus sk sl sl_sst sv sv_lines tr ug uk ur vi zh
 
-ud2=
+ud2="hi hr hu id it it_partut ja kk ko la la_ittb la_proiel lv nl nl_lassysmall no_bokmaal"
 
 ##############
 # run udpipe #
