@@ -1,33 +1,134 @@
+aligned-acc f1-score
+
 * ar
+* bg
+* ca
+* cs
+* cs_cac
+* cs_cltt
+* cu
+* da
+* de
+* el
+* en
+* en_lines
+* en_partut
+* es
+* es_ancora
+* et
+* eu
+* fa
+* fi
+* fi_ftb
+* fr
+* fr_partut
+* fr_sequoia
+* ga
+* gl
+* gl_treegal
+* got
+* grc
+* grc_proiel
+* he
+* hi
+* hr
+* hu
+* id
+* it
+* it_partut
+* ja
+* kk
+* ko
+* la
+* la_ittb
+* la_proiel
+* lv
+* nl
+* nl_lassysmall
+* no_bokmaal
+* no_nynorsk
+* pl
+* pt
+* pt_br
+* ro
+* ru
+* ru_syntagrus
+* sk
+* sl
+* sl_sst
+* sv
+* sv_lines
+* tr
+* ug
+* uk
+* ur
+* vi
+* zh
+* baseline
 
-|  e | nonp | proj |
-|----+------+------|
-|  4 | 65.12     | 64.78     |
-|  5 | 65.31     | 64.81     |
-|  6 | 65.69     | 65.13     |
-|  7 | 65.75     | 65.37     |
-|  8 | 65.54     | 65.05     |
-|  9 | 65.77     | 64.57     |
-| 10 | 65.58     | 65.45     |
-| 11 | 65.73     | 65.36     |
-| 12 | 65.77     | 65.39     |
-| 13 | 65.93     | 65.23     |
-| 14 | 65.68     | 64.94     |
-| 15 | 65.79     | 65.19     |
-
-* template
-
-|  e | nonp | proj |
-|----+------+------|
-|  4 |      |      |
-|  5 |      |      |
-|  6 |      |      |
-|  7 |      |      |
-|  8 |      |      |
-|  9 |      |      |
-| 10 |      |      |
-| 11 |      |      |
-| 12 |      |      |
-| 13 |      |      |
-| 14 |      |      |
-| 15 |      |      |
+| :lang                | :code         |   las |
+|----------------------+---------------+-------|
+| Arabic               | ar            | 64.13 |
+| Bulgarian            | bg            | 82.14 |
+| Catalan              | ca            | 85.21 |
+| Czech                | cs            | 83.93 |
+| Czech-CAC            | cs_cac        | 83.40 |
+| Czech-CLTT           | cs_cltt       | 66.46 |
+| Old_Church_Slavonic  | cu            | 63.33 |
+| Danish               | da            | 73.24 |
+| German               | de            | 73.11 |
+| Greek                | el            | 77.84 |
+| English              | en            | 75.80 |
+| English-LinES        | en_lines      | 74.25 |
+| English-ParTUT       | en_partut     | 73.81 |
+| Spanish              | es            | 83.98 |
+| Spanish-AnCora       | es_ancora     | 84.33 |
+| Estonian             | et            | 58.98 |
+| Basque               | eu            | 69.18 |
+| Persian              | fa            | 79.18 |
+| Finnish              | fi            | 73.43 |
+| Finnish-FTB          | fi_ftb        | 74.02 |
+| French               | fr            | 85.16 |
+| French-ParTUT        | fr_partut     | 70.70 |
+| French-Sequoia       | fr_sequoia    | 79.80 |
+| Irish                | ga            | 62.69 |
+| Galician             | gl            | 77.01 |
+| Galician-TreeGal     | gl_treegal    | 64.07 |
+| Gothic               | got           | 58.31 |
+| Ancient_Greek        | grc           | 55.21 |
+| Ancient_Greek-PROIEL | grc_proiel    | 66.88 |
+| Hebrew               | he            | 61.38 |
+| Hindi                | hi            | 86.82 |
+| Croatian             | hr            | 76.16 |
+| Hungarian            | hu            | 64.62 |
+| Indonesian           | id            | 73.81 |
+| Italian              | it            | 84.08 |
+| Italian-ParTUT       | it_partut     | 77.79 |
+| Japanese             | ja            | 73.49 |
+| Kazakh               | kk            | 20.45 |
+| Korean               | ko            | 55.37 |
+| Latin                | la            | 46.95 |
+| Latin-ITTB           | la_ittb       | 68.73 |
+| Latin-PROIEL         | la_proiel     | 58.83 |
+| Latvian              | lv            | 61.20 |
+| Dutch                | nl            | 73.91 |
+| Dutch-LassySmall     | nl_lassysmall | 72.64 |
+| Norwegian-Bokmaal    | no_bokmaal    | 83.90 |
+| Norwegian-Nynorsk    | no_nynorsk    | 81.51 |
+| Polish               | pl            | 78.66 |
+| Portuguese           | pt            | 84.09 |
+| Portuguese-BR        | pt_br         | 85.90 |
+| Romanian             | ro            | 79.08 |
+| Russian              | ru            | 74.77 |
+| Russian-SynTagRus    | ru_syntagrus  | 86.31 |
+| Slovak               | sk            | 73.46 |
+| Slovenian            | sl            | 80.61 |
+| Slovenian-SST        | sl_sst        | 45.01 |
+| Swedish              | sv            | 73.13 |
+| Swedish-LinES        | sv_lines      | 74.21 |
+| Turkish              | tr            | 53.48 |
+| Uyghur               | ug            | 34.62 |
+| Ukrainian            | uk            | 53.70 |
+| Urdu                 | ur            | 76.12 |
+| Vietnamese           | vi            | 40.45 |
+| Chinese              | zh            | 56.00 |
