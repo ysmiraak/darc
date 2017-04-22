@@ -81,7 +81,8 @@ class Setup(object):
             hotv = np.zeros(len(idx2tran), np.float32)
             hotv[idx] = 1.0
             tran2idx[tran] = hotv
-        data = [], [], [], [], [], []
+        data = [],     [],     [],     [],     [],     []
+        name = "form", "lemm", "upos", "drel", "feat"
         form_append, lemm_append, upos_append, drel_append, feat_append, \
             tran_append, = (d.append for d in data)
         for sent in sents:
@@ -92,15 +93,15 @@ class Setup(object):
                 if not config.doable(tran[0]):
                     # this happends on a non-proj sent with proj setting
                     break
-                feat = self.feature(config)
-                form_append(feat[0])
-                lemm_append(feat[1])
-                upos_append(feat[2])
-                drel_append(feat[3])
-                feat_append(feat[4])
+                feature = self.feature(config, named=False)
+                form_append(feature[0])
+                lemm_append(feature[1])
+                upos_append(feature[2])
+                drel_append(feature[3])
+                feat_append(feature[4])
                 tran_append(tran2idx[tran])
                 getattr(config, tran[0])(tran[1])
-        self.x = [np.concatenate(d) for d in data[:-1]]
+        self.x = {n: np.concatenate(d) for n, d in zip(name, data)}
         self.y = np.array(data[-1], np.float32)
         return self
 
@@ -128,6 +129,7 @@ class Setup(object):
               output_const=None,
               optimizer='adamax'):
         """-> keras.models.Model"""
+        assert hasattr(self, 'x')
         upos_embed_dim = int(upos_embed_dim)
         assert 0 <= upos_embed_dim
         drel_embed_dim = int(drel_embed_dim)
@@ -158,12 +160,13 @@ class Setup(object):
         embed_const = const(embed_const)
         embed_init = uniform(minval=-embed_init_max, maxval=embed_init_max)
 
-        form = Input(name="form", shape=self.x[0].shape[1:], dtype=np.uint16)
-        lemm = Input(name="lemm", shape=self.x[1].shape[1:], dtype=np.uint16)
-        upos = Input(name="upos", shape=self.x[2].shape[1:], dtype=np.uint8)
-        drel = Input(name="drel", shape=self.x[3].shape[1:], dtype=np.uint8)
-        feat = Input(name="feat", shape=self.x[4].shape[1:], dtype=np.float32)
-        i = [form, lemm, upos, drel, feat]
+        form = Input(name="form", shape=self.x["form"].shape[1:], dtype=np.uint16)
+        lemm = Input(name="lemm", shape=self.x["lemm"].shape[1:], dtype=np.uint16)
+        upos = Input(name="upos", shape=self.x["upos"].shape[1:], dtype=np.uint8)
+        drel = Input(name="drel", shape=self.x["drel"].shape[1:], dtype=np.uint8)
+        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.float32)
+        i = [form, lemm, upos, drel, feat] if self.lemm_emb is not None else \
+            [form, upos, drel, feat]
         form = Embedding(
             input_dim=len(self.form2idx),
             output_dim=self.form_emb.shape[-1],
@@ -242,7 +245,7 @@ class Setup(object):
                 break
         return config.finish()
 
-    def feature(self, config):
+    def feature(self, config, named=True):
         """-> [numpy.ndarray] :as form, upos, drel, feat
 
         assert form.shape == upos.shape == (18, )
@@ -336,7 +339,10 @@ class Setup(object):
                 except KeyError:
                     pass
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
-        return [form, lemm, upos, drel, feat]  # model.predict takes list
+        if named:
+            return {'form': form, 'lemm': lemm, 'upos': upos, 'drel': drel, 'feat': feat}
+        else:
+            return [form, lemm, upos, drel, feat]
 
     def save(self, file, model=None, with_data=True):
         """as npy file"""
