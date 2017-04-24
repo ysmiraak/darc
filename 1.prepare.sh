@@ -10,8 +10,6 @@ udpipe_model_path="./conll17/udpipe_model/"
 silver_train_path="./conll17/silver_train/"
 udpiped_test_path="./conll17/udpiped_test/"
 
-ud2="fr_partut ga gl_treegal kk la sl_sst ug uk"
-
 ##############
 # run udpipe #
 ##############
