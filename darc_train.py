@@ -5,12 +5,13 @@ def parse_args():
     parser.add_argument('--verbose', '-v', action='count', help="maximum verbosity: -vv")
     parser.add_argument('--model', required=True, help="npy model file to save")
     parser.add_argument('--train', required=True, nargs='+', help="conllu files for training")
-    parser.add_argument('--form-w2v', required=True, help="word2vec file for form embeddings")
+    parser.add_argument('--form-w2v', help="word2vec file for form embeddings")
     parser.add_argument('--lemm-w2v', help="word2vec file for lemma embeddings")
     parser.add_argument('--w2v-is-binary', action='store_true')
     parser.add_argument('--proj', action='store_true', help="train a projective parser")
     parser.add_argument('--upos-embed-dim', type=int, default=12, help="default: 12")
     parser.add_argument('--drel-embed-dim', type=int, default=16, help="default: 16")
+    parser.add_argument('--no-morphology', action='store_true')
     parser.add_argument('--hidden-layers', type=int, default=2, help="default: 2")
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
     parser.add_argument('--activation', default='relu', help="default: relu")
@@ -22,7 +23,9 @@ def parse_args():
     parser.add_argument('--hidden-dropout', type=float, default=0.25, help="default: 0.25")
     parser.add_argument('--output-const', default='none', help="default: none")
     parser.add_argument('--optimizer', default='adamax', help="default: adamax")
-    parser.add_argument('--epochs', type=int, default=12, help="default: 12")
+    parser.add_argument('--batch', type=int, default=32, help="default: 32")
+    parser.add_argument('--epochs', type=int, default=12, help="default: 16")
+    parser.add_argument('--save-for-each', action='store_true')
     args = parser.parse_args()
     if not args.verbose:
         args.verbose = 0
@@ -61,14 +64,14 @@ if '__main__' == __name__:
     setup = make_setup(
         train=args.train,
         form_w2v=args.form_w2v,
-        form_w2v_is_binary=args.form_w2v_is_binary,
         lemm_w2v=args.lemm_w2v,
-        lemm_w2v_is_binary=args.lemm_w2v_is_binary,
+        w2v_is_binary=args.w2v_is_binary,
         proj=args.proj,
         verbose=args.verbose)
     model = setup.model(
         upos_embed_dim=args.upos_embed_dim,
         drel_embed_dim=args.drel_embed_dim,
+        use_morphology=not args.no_morphology,
         hidden_units=args.hidden_units,
         hidden_layers=args.hidden_layers,
         activation=args.activation,
@@ -80,7 +83,15 @@ if '__main__' == __name__:
         hidden_dropout=args.hidden_dropout,
         output_const=args.output_const,
         optimizer=args.optimizer)
-    setup.train(model, epochs=args.epochs, verbose=args.verbose)
-    setup.save(args.model, model, with_data=False)
-    if args.verbose:
-        print("saved model", args.model)
+    if args.save_for_each:
+        for epoch in range(args.epochs):
+            setup.train(model, batch_size=args.batch, epochs=1, verbose=args.verbose)
+            model_path = "{}-e{:0>2d}.npy".format(args.model, epoch)
+            setup.save(model_path, model, with_data=False)
+            if args.verbose:
+                print("saved model", model_path)
+    else:
+        setup.train(model, batch_size=args.batch, epochs=args.epochs, verbose=args.verbose)
+        setup.save(args.model, model, with_data=False)
+        if args.verbose:
+            print("saved model", args.model)

@@ -20,16 +20,21 @@ class Setup(object):
             setattr(self, attr, val)
 
     @staticmethod
-    def cons(sents, form_w2v, lemm_w2v=None, proj=False):
+    def cons(sents, form_w2v=None, lemm_w2v=None, proj=False):
         """[Sent], gensim.models.keyedvectors.KeyedVectors -> Setup"""
         specials = Sent.dumb, Sent.root, Sent.obsc
         # form_emb form2idx
-        pad = [s for s in specials if s not in form_w2v.vocab]
-        voc, dim = form_w2v.syn0.shape
-        form_emb = np.zeros((voc + len(pad), dim), np.float32)
-        form_emb[:len(form_w2v.index2word)] = form_w2v.syn0
-        form2idx = {form: idx for idx, form in enumerate(form_w2v.index2word)}
-        del form_w2v
+        if form_w2v:
+            pad = [s for s in specials if s not in form_w2v.vocab]
+            voc, dim = form_w2v.syn0.shape
+            form_emb = np.zeros((voc + len(pad), dim), np.float32)
+            form_emb[:len(form_w2v.index2word)] = form_w2v.syn0
+            form2idx = {form: idx for idx, form in enumerate(form_w2v.index2word)}
+            del form_w2v
+        else:
+            pad = specials
+            form_emb = None
+            form2idx = {}
         for form in pad:
             form2idx[form] = len(form2idx)
         # lemm_emb lemm2idx
@@ -106,17 +111,20 @@ class Setup(object):
         return self
 
     @staticmethod
-    def make(train_conllu, form_w2v, lemm_w2v=None, binary=True, proj=False):
+    def make(train_conllu, form_w2v=None, lemm_w2v=None, binary=True, proj=False):
         """-> Setup; from files"""
         return Setup.cons(
-            conllu.load(train_conllu),  proj=proj,
-            form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary),
+            sents=conllu.load(train_conllu),
+            form_w2v=KeyedVectors.load_word2vec_format(form_w2v, binary=binary)
+            if form_w2v else None,
             lemm_w2v=KeyedVectors.load_word2vec_format(lemm_w2v, binary=binary)
-            if lemm_w2v else None)
+            if lemm_w2v else None,
+            proj=proj)
 
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
+              use_morphology=True,
               hidden_units=256,
               hidden_layers=2,
               activation='relu',
@@ -144,7 +152,7 @@ class Setup(object):
         assert 0 <= embed_dropout < 1
         hidden_dropout = float(hidden_dropout)
         assert 0 <= hidden_dropout < 1
-
+        # for coercing constraint
         def const(x):
             try:
                 x = float(x)
@@ -154,55 +162,60 @@ class Setup(object):
                 if isinstance(x, str) and "none" == x.lower():
                     x = None
             return x
-
+        # conversion
         output_const = const(output_const)
         hidden_const = const(hidden_const)
         embed_const = const(embed_const)
         embed_init = uniform(minval=-embed_init_max, maxval=embed_init_max)
-
+        # all possible inputs
         form = Input(name="form", shape=self.x["form"].shape[1:], dtype=np.uint16)
         lemm = Input(name="lemm", shape=self.x["lemm"].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x["upos"].shape[1:], dtype=np.uint8)
         drel = Input(name="drel", shape=self.x["drel"].shape[1:], dtype=np.uint8)
         feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.float32)
-        i = [form, lemm, upos, drel, feat] if self.lemm_emb is not None else \
-            [form, upos, drel, feat]
-        form = Embedding(
-            input_dim=len(self.form2idx),
-            output_dim=self.form_emb.shape[-1],
-            weights=[self.form_emb],
-            embeddings_constraint=embed_const,
-            name="form_embed")(form)
-        lemm = Embedding(
-            input_dim=len(self.lemm2idx),
-            output_dim=self.lemm_emb.shape[-1],
-            weights=[self.lemm_emb],
-            embeddings_constraint=embed_const,
-            name="lemm_embed")(lemm) if self.lemm_emb is not None else form
-        upos = Embedding(
-            input_dim=len(self.upos2idx),
-            output_dim=upos_embed_dim,
-            embeddings_initializer=embed_init,
-            embeddings_constraint=embed_const,
-            name="upos_embed")(upos)
-        drel = Embedding(
-            input_dim=len(self.drel2idx),
-            output_dim=drel_embed_dim,
-            embeddings_initializer=embed_init,
-            embeddings_constraint=embed_const,
-            name="drel_embed")(drel)
-        form = Flatten(name="form_flat")(form)
-        lemm = Flatten(name="lemm_flat")(lemm)
-        upos = Flatten(name="upos_flat")(upos)
-        drel = Flatten(name="drel_flat")(drel)
+        # cons layers
+        i = [upos, drel]
+        upos = Flatten(name="upos_flat")(
+            Embedding(
+                input_dim=len(self.upos2idx),
+                output_dim=upos_embed_dim,
+                embeddings_initializer=embed_init,
+                embeddings_constraint=embed_const,
+                name="upos_embed")(upos))
+        drel = Flatten(name="drel_flat")(
+            Embedding(
+                input_dim=len(self.drel2idx),
+                output_dim=drel_embed_dim,
+                embeddings_initializer=embed_init,
+                embeddings_constraint=embed_const,
+                name="drel_embed")(drel))
+        o = [upos, drel]
+        if self.form_emb is not None:
+            i.append(form)
+            form = Flatten(name="form_flat")(
+                form = Embedding(
+                    input_dim=len(self.form2idx),
+                    output_dim=self.form_emb.shape[-1],
+                    weights=[self.form_emb],
+                    embeddings_constraint=embed_const,
+                    name="form_embed")(form))
+            o.append(form)
+        if self.lemm_emb is not None:
+            i.append(lemm)
+            lemm = Flatten(name="lemm_flat")(
+                Embedding(
+                    input_dim=len(self.lemm2idx),
+                    output_dim=self.lemm_emb.shape[-1],
+                    weights=[self.lemm_emb],
+                    embeddings_constraint=embed_const,
+                    name="lemm_embed")(lemm))
+            o.append(lemm)
         if embed_dropout:
-            form = Dropout(name="form_dropout", rate=embed_dropout)(form)
-            lemm = Dropout(name="lemm_dropout", rate=embed_dropout)(lemm)
-            upos = Dropout(name="upos_dropout", rate=embed_dropout)(upos)
-            drel = Dropout(name="drel_dropout", rate=embed_dropout)(drel)
-        o = Concatenate(name="concat")(
-            [form, lemm, upos, drel, feat] if self.lemm_emb is not None else
-            [form, upos, drel, feat])
+            o = [Dropout(name=x.name.replace("flat", "dropout"), rate=embed_dropout)(x) for x in o]
+        if use_morphology:
+            i.append(feat)
+            o.append(feat)
+        o = Concatenate(name="concat")(o)
         for hid in range(hidden_layers):
             o = Dense(
                 units=hidden_units,
