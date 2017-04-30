@@ -193,7 +193,7 @@ class Setup(object):
         if self.form_emb is not None:
             i.append(form)
             form = Flatten(name="form_flat")(
-                form = Embedding(
+                Embedding(
                     input_dim=len(self.form2idx),
                     output_dim=self.form_emb.shape[-1],
                     weights=[self.form_emb],
@@ -211,7 +211,8 @@ class Setup(object):
                     name="lemm_embed")(lemm))
             o.append(lemm)
         if embed_dropout:
-            o = [Dropout(name=x.name.replace("flat", "dropout"), rate=embed_dropout)(x) for x in o]
+            o = [Dropout(name="{}_dropout".format(x.name.split("_")[0]), rate=embed_dropout)(x)
+                 for x in o]
         if use_morphology:
             i.append(feat)
             o.append(feat)
