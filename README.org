@@ -32,7 +32,7 @@ for [[http://universaldependencies.org/conll17/][the conll 2017 shared task]]
 
 ** tokenize and tag raw texts with udpipe models
 
-   for surprise languages, take the provided conllu files.
+   for surprise languages, take the conllu input provided by the shared task.
 
 ** parse with darc models
 

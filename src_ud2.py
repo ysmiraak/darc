@@ -63,14 +63,14 @@ treebanks = {
     'ur': 'Urdu',
     'vi': 'Vietnamese',
     'zh': 'Chinese',
-    # surprise
+}
+
+surprise = {
     'bxr': 'Buryat',
     'kmr': 'Kurmanji',
     'sme': 'North_Sami',
     'hsb': 'Upper_Sorbian',
 }
-
-surprise = {'bxr', 'kmr', 'sme', 'hsb'}
 
 no_dev = {'fr_partut', 'ga', 'gl_treegal', 'kk', 'la', 'sl_sst', 'ug', 'uk'}
 
