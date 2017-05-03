@@ -28,12 +28,12 @@ for [[http://universaldependencies.org/conll17/][the conll 2017 shared task]]
 
    on =silver-train=
 
-*** with =--proj= for
-
-    ????
-
-*** without =--proj= for
-
-    the rest
-
 * parse
+
+** tokenize and tag raw texts with udpipe models
+
+   for surprise languages, take the provided conllu files.
+
+** parse with darc models
+
+   for surprise languages, pick the closest model.
