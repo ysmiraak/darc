@@ -4,7 +4,7 @@ from src_setup import Setup
 import json
 
 
-udpipe_parse_path = "./conll17/udpipe_parse/"
+udpiped_test_path = "./conll17/udpiped_test/"
 system_model_path = "./conll17/system_model/"
 
 
@@ -31,6 +31,6 @@ if '__main__' == __name__:
         print("loading model", lang, "....")
         setup, model = Setup.load("{}{}.npy".format(system_model_path, lang), with_model=True)
         conllu.save((setup.parse(model, sent) for sent in conllu.load(
-            udpipe_parse_path + outfile)),
+            udpiped_test_path + outfile)),
                     system_parse_path + outfile)
         print("written", outfile)

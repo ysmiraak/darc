@@ -3,7 +3,7 @@ import json
 
 
 udpipe_model_path = "./conll17/udpipe_model/"
-udpipe_parse_path = "./conll17/udpipe_parse/"
+udpiped_test_path = "./conll17/udpiped_test/"
 
 
 def path_dir(path):
@@ -23,10 +23,10 @@ if '__main__' == __name__:
         for task in metadata:
             if task['ltcode'] in ud2.treebanks:
                 file.write("udpipe --input horizontal --tokenize --tag --outfile {} {} {}\n"
-                           .format(udpipe_parse_path + task['outfile'],
+                           .format(udpiped_test_path + task['outfile'],
                                    udpipe_model_path + task['ltcode'] + ".udpipe",
                                    task_path + task['rawfile']))
             else:
                 file.write("cp {} {}\n"
                            .format(task_path + task['psegmorfile'],
-                                   udpipe_parse_path + task['outfile']))
+                                   udpiped_test_path + task['outfile']))
