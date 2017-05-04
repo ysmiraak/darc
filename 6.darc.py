@@ -4,16 +4,20 @@ from src_setup import Setup
 import json
 
 
-task_path = "/media/training-datasets/universal-dependency-learning/conll17-ud-trial-2017-03-19/"
-# "/media/training-datasets/universal-dependency-learning/conll17-ud-development-2017-03-19/"
+udpipe_parse_path = "./conll17/udpipe_parse/"
+system_model_path = "./conll17/system_model/"
 
-darc_path = "/home/darc/darc/"
-udpipe_parse_path = darc_path + "conll17/udpipe_parse/"
-system_model_path = darc_path + "conll17/system_model/"
-system_parse_path = darc_path + "conll17/system_parse/"
+
+def path_dir(path):
+    """str -> str: valid dir path"""
+    return path if path.endswith("/") else path + "/"
 
 
 if '__main__' == __name__:
+    from sys import argv
+    assert 3 == len(argv)
+    task_path = path_dir(argv[1])
+    system_parse_path = path_dir(argv[2])
 
     with open(task_path + "metadata.json") as file:
         metadata = json.load(file)
