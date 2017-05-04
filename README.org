@@ -1,11 +1,19 @@
 for [[http://universaldependencies.org/conll17/][the conll 2017 shared task]]
 
+* deps
+
+  - python3
+  - numpy
+  - Keras
+  - tensorflow
+  - gensim
+
 * train
 
 ** train tokenizers and taggers with [[https://github.com/ufal/udpipe][udpipe]]
 
    and run on the gold standard =train= to produce =silver-train=:
-   
+
    we used the =(detokenized-)baselinemodel-splits=, but took both =train= and
    =tune= for =train=, and =dev= for =tune=. and we used the same parameters as
    the baseline models.

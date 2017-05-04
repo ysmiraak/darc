@@ -15,7 +15,7 @@ if '__main__' == __name__:
     from sys import argv
     assert 2 == len(argv)
     task_path = path_dir(argv[1])
-    
+
     with open(task_path + "metadata.json") as file:
         metadata = json.load(file)
 
