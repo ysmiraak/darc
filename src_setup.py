@@ -81,11 +81,8 @@ class Setup(object):
             drel2idx=drel2idx,
             feat2idx=feat2idx,
             idx2tran=idx2tran)
-        tran2idx = {}
-        for idx, tran in enumerate(idx2tran):
-            hotv = np.zeros(len(idx2tran), np.float32)
-            hotv[idx] = 1.0
-            tran2idx[tran] = hotv
+        tran_idx = np.eye(len(idx2tran), dtype=np.float32)
+        tran2idx = {tran: tran_idx[idx] for idx, tran in enumerate(idx2tran)}
         data = [],     [],     [],     [],     [],     []
         name = "form", "lemm", "upos", "drel", "feat"
         form_append, lemm_append, upos_append, drel_append, feat_append, \
