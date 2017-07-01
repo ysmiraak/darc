@@ -147,13 +147,7 @@ class Setup(object):
             else:
                 print("WARNING!!!! FAILED TO PARSE:", " ".join(sent.form))
                 break
-        # finish
-        head = list(repeat(Sent.dumb, len(config.graph)))
-        for h, ds in enumerate(config.graph):
-            for d in ds:
-                head[d] = h
-        deprel = [drel.split(":")[0] for drel in config.deprel]
-        return config.sent._replace(head=tuple(head), deprel=tuple(deprel))
+        return config.finish()
 
     def feature(self, config, named=True):
         """-> [numpy.ndarray] :as form, upos, drel, feat
