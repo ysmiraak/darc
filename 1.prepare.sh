@@ -6,29 +6,7 @@
 #  pt pt_br ro ru ru_syntagrus sk sl sl_sst sv sv_lines tr ug uk ur vi zh"
 
 ud2_treebank_path="/data/ud-treebanks-conll2017/"
-udpipe_model_path="./conll17/udpipe_model/"
 silver_train_path="./conll17/silver_train/"
-udpiped_test_path="./conll17/udpiped_test/"
-
-##############
-# run udpipe #
-##############
-
-for lang in ${ud2}
-do
-    model=${udpipe_model_path}${lang}".udpipe"
-    # preparing training data
-    gold=$(find ${ud2_treebank_path}*"/"${lang}"-ud-train.conllu")
-    silver=${silver_train_path}${lang}".conllu"
-    udpipe --input conllu --tag --outfile ${silver} ${model} ${gold}
-    echo "written" ${silver}
-    # preparing testing data
-    raw=$(find ${ud2_treebank_path}*"/"${lang}"-ud-dev.txt" ||
-              find ${ud2_treebank_path}*"/"${lang}"-ud-train.txt")
-    piped=${udpiped_test_path}${lang}".conllu"
-    udpipe --input horizontal --tokenize --tag --outfile ${piped} ${model} ${raw}
-    echo "written" ${piped}
-done
 
 ###############
 # prepare raw #
