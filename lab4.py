@@ -1,4 +1,4 @@
-import conllu
+import src_conllu as conllu
 import src_ud2 as ud2
 
 from lab_setup4 import Setup
@@ -6,7 +6,7 @@ trial = 4
 
 
 def train_parse(lang):
-    setup = Setup.make(ud2.path(lang), ds="train")
+    setup = Setup.make(ud2.path(lang))
     model = setup.model()
     sents = list(conllu.load(ud2.path(lang, ds="dev")))
     for epoch in range(25):
