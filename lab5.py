@@ -13,7 +13,7 @@ def train_parse(lang):
         setup.train(model, verbose=2)
         if 4 <= epoch:
             conllu.save((setup.parse(model, sent) for sent in sents)
-                        , "./lab/{}_{}_{}.conllu".format(lang, trial, epoch))
+                        , "./lab/{}/{}_{}_{:02d}.conllu".format(lang, lang, trial, epoch))
 
 
 if '__main__' == __name__:
