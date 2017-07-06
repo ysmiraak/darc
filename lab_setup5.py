@@ -226,11 +226,11 @@ class Setup(object):
                 attr2val[attr] = val
             for attr, val2idx in feat2idx.items():
                 try:
-                    val = attr2val[attr]
+                    idx = val2idx[attr2val[attr]]
                 except KeyError:
-                    val = "_"
+                    idx = val2idx["_"]
                 finally:
-                    ftv[val2idx[val]] = 1.0
+                    ftv[idx] = 1.0
         upos.shape = drel.shape = feat.shape = 1, -1
         if named:
             return {'upos': upos, 'drel': drel, 'feat': feat}
