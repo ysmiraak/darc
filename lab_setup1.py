@@ -1,4 +1,4 @@
-# atomic
+# atomic symbol, dumb root obsc, 32 dim
 
 import src_conllu as conllu
 from src_conllu import Sent
@@ -107,7 +107,6 @@ class Setup(object):
             o = Dense(
                 units=256,
                 activation='relu',
-                bias_initializer='ones',
                 kernel_initializer='he_uniform',
                 name="hidden{}".format(1 + hid))(o)
         o = Dense(
@@ -249,9 +248,21 @@ class Setup(object):
             return  Setup(**bean)
 
 
-# lang, proj = 'kk', False
-# import src_ud2 as ud2
-# setup = Setup.make(ud2.path(lang, 'train'))
-# from keras.utils import plot_model
-# model = setup.model()
-# plot_model(model, to_file="./lab/model.png")
+if '__main__' == __name__:
+
+    trial = 1
+
+    from lab import langs
+    import src_ud2 as ud2
+
+    def train_parse(lang):
+        setup = Setup.make(ud2.path(lang))
+        model = setup.model()
+        sents = list(conllu.load(ud2.path(lang, ds="dev")))
+        for epoch in range(25):
+            setup.train(model, verbose=2)
+            conllu.save((setup.parse(model, sent) for sent in sents)
+                        , "./lab/{}/{}-t{}-e{:02d}.conllu".format(lang, lang, trial, epoch))
+
+    for lang in langs:
+        train_parse(lang)

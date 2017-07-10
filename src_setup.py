@@ -217,7 +217,6 @@ class Setup(object):
             o = Dense(
                 units=hidden_units,
                 activation=activation,
-                bias_initializer='ones' if 'relu' == activation else 'zeros',
                 kernel_initializer=init,
                 kernel_constraint=hidden_const,
                 name="hidden{}".format(1 + hid))(o)
