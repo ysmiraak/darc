@@ -18,5 +18,6 @@ def train_parse(lang):
 
 if '__main__' == __name__:
     from lab import langs
+    langs = 'ar', 'bg', 'eu', 'fi_ftb', 'grc', 'he', 'hr', 'it', 'nl', 'pl', 'sv', 'tr', 'zh', 'fa', 'la_proiel'
     for lang in langs:
         train_parse(lang)

@@ -103,7 +103,7 @@ class Setup(object):
         def normalized_sum(x):
             x = K.reshape(x, (-1, 18, len(self.feat2idx), feat_emb_dim))
             x = K.sum(x, -2)
-            norm = K.maximum(K.sum(x, -1), 1e-12)
+            norm = K.maximum(K.sum(K.abs(x), -1), 1e-12)
             norm = K.reshape(norm, (-1, 18, 1))
             x /= norm
             return x
