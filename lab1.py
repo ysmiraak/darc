@@ -262,7 +262,7 @@ if '__main__' == __name__:
         for epoch in range(25):
             setup.train(model, verbose=2)
             conllu.save((setup.parse(model, sent) for sent in sents)
-                        , "./lab/{}/{}-t{}-e{:02d}.conllu".format(lang, lang, trial, epoch))
+                        , "./lab/{}-t{}-e{:02d}.conllu".format(lang, trial, epoch))
 
     for lang in langs:
         train_parse(lang)
