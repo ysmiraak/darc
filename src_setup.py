@@ -329,7 +329,7 @@ class Setup(object):
         # drel
         drel2idx = self.drel2idx
         drel = config.deprel
-        drel = np.fromiter((drel2idx[drel[i]] for i in x[2:]), np.uint8)
+        drel = np.fromiter((drel2idx[drel[i]] for i in x[3:-3]), np.uint8)
         # feats
         feats = config.sent.feats
         feats = [feats[i] for i in x]
