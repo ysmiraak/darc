@@ -3,8 +3,9 @@ from src_conllu import Sent
 from src_transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
+from keras import backend as K
 from keras.models import Model, model_from_json
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense, Lambda
 from keras.initializers import uniform
 from keras.constraints import max_norm
 
@@ -210,16 +211,16 @@ class Setup(object):
                     embeddings_constraint=embed_const,
                     name="lemm_embed")(lemm))
             o.append(lemm)
-        if feat_emb_dim:
+        if feat_embed_dim:
             i.append(feat)
             feat = Embedding(
                 input_dim=1 + len(self.feat2idx),
-                output_dim=feat_emb_dim,
+                output_dim=feat_embed_dim,
                 embeddings_initializer=embed_init,
                 mask_zero=True,
                 name="feat_embed")(feat)
             def normalized_sum(x):
-                x = K.reshape(x, (-1, 18, len(self.feat2idx), feat_emb_dim))
+                x = K.reshape(x, (-1, 18, len(self.feat2idx), feat_embed_dim))
                 x = K.sum(x, -2)
                 x = K.l2_normalize(x, -1)
                 return x
