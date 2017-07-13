@@ -386,7 +386,7 @@ class Setup(object):
 if '__main__' == __name__:
 
     trial = 10
-    use_lemma = false
+    use_lemma = False
     embed_const = None
     embed_dropout = 0
 
@@ -395,17 +395,16 @@ if '__main__' == __name__:
     parse_path = "./lab/parse/"
 
     from lab import langs
-    import src_ud2 as ud2
 
     def train_parse(lang):
         setup = Setup.make(
-            ud2.path(lang, ds='train', folder=train_path)
+            "{}{}-ud-train.conllu".format(train_path, lang)
             , form_w2v="{}{}-form{}.w2v".format(embed_path, lang, 32 if use_lemma else 64)
             , lemm_w2v="{}{}-lemm32.w2v".format(embed_path, lang) if use_lemma else None
             , binary=True
             , proj=False)
         model = setup.model(embed_const=embed_const, embed_dropout=embed_dropout)
-        sents = list(conllu.load(ud2.path(lang, ds='dev', folder=train_path)))
+        sents = list(conllu.load("{}{}-ud-dev.conllu".format(train_path, lang)))
         for epoch in range(25):
             setup.train(model, verbose=2)
             conllu.save((setup.parse(model, sent) for sent in sents)
