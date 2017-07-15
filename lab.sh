@@ -1,5 +1,5 @@
-train="/home/kuan/py/darc/lab/train/"
-embed="/home/kuan/py/darc/lab/embed/"
+train="./lab/train/"
+embed="./lab/embed/"
 langs="ar bg eu fa fi_ftb grc he hr it la_proiel nl pl sv tr zh"
 
 for lang in ${langs}
@@ -9,21 +9,21 @@ do
            --form ${embed}${lang}"-form.raw" \
            --lemm ${embed}${lang}"-lemm.raw"
 
-    /home/kuan/word2vec -size 64 \
-                        -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
-                        -train ${embed}${lang}"-form.raw" \
-                        -output ${embed}${lang}"-form64.w2v" \
-                        -binary 1
+    ./lab/word2vec -size 64 \
+                   -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
+                   -train ${embed}${lang}"-form.raw" \
+                   -output ${embed}${lang}"-form64.w2v" \
+                   -binary 1
 
-    /home/kuan/word2vec -size 32 \
-                        -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
-                        -train ${embed}${lang}"-form.raw" \
-                        -output ${embed}${lang}"-form32.w2v" \
-                        -binary 1
+    ./lab/word2vec -size 32 \
+                   -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
+                   -train ${embed}${lang}"-form.raw" \
+                   -output ${embed}${lang}"-form32.w2v" \
+                   -binary 1
 
-    /home/kuan/word2vec -size 32 \
-                        -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
-                        -train ${embed}${lang}"-lemm.raw" \
-                        -output ${embed}${lang}"-lemm32.w2v" \
-                        -binary 1
+    ./lab/word2vec -size 32 \
+                   -type 3 -hs 0 -min-count 2 -window 7 -sample 0.1 -negative 7 -iter 20 \
+                   -train ${embed}${lang}"-lemm.raw" \
+                   -output ${embed}${lang}"-lemm32.w2v" \
+                   -binary 1
 done
