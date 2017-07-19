@@ -68,6 +68,7 @@ class Setup(object):
                         feat2idx[feat] = len(feat2idx)
                 if drel not in drel2idx:
                     drel2idx[drel] = len(drel2idx)
+        feat2idx[Sent.dumb] = len(feat2idx)  # free idx 0 for mask
         idx2tran = [('shift', None)]
         if not proj: idx2tran.append(('swap', None))
         # x y
