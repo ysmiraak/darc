@@ -1,0 +1,27 @@
+* t for trial
+
+|  t | method               | form    | lemma   | unit-norm | dropout |
+|----+----------------------+---------+---------+-----------+---------|
+|  0 | none                 |         |         |           |         |
+|  1 | atomic               |         |         |           |         |
+|  2 | binary               |         |         |           |         |
+|  3 | l1-normalized binary |         |         |           |         |
+|  4 | l2-normalized binary |         |         |           |         |
+|  5 | one-hot              |         |         |           |         |
+|  6 | summed               |         |         |           |         |
+|  7 | averaged             |         |         |           |         |
+|  8 | l1-normalized summed |         |         |           |         |
+|  9 | l2-normalized summed |         |         |           |         |
+| 10 | binary               | \bullet |         |           |         |
+| 11 | l2-normalized summed | \bullet |         |           |         |
+| 12 | binary               | \bullet | \bullet |           |         |
+| 13 | l2-normalized summed | \bullet | \bullet |           |         |
+| 14 | binary               | \bullet |         |           |         |
+| 15 | l2-normalized summed | \bullet |         | \bullet   |         |
+| 16 | binary               | \bullet | \bullet | \bullet   |         |
+| 17 | l2-normalized summed | \bullet | \bullet | \bullet   |         |
+| 18 | binary               | \bullet |         | \bullet   | \bullet |
+| 19 | l2-normalized summed | \bullet |         | \bullet   | \bullet |
+| 20 | binary               | \bullet | \bullet | \bullet   | \bullet |
+| 21 | l2-normalized summed | \bullet | \bullet | \bullet   | \bullet |
+| 22 | none                 | \bullet | \bullet | \bullet   | \bullet |

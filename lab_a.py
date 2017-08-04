@@ -245,8 +245,7 @@ class Setup(object):
             if 2 > len(config.stack):
                 config.shift()
                 continue
-            prob = model.predict(self.feature(config), 1).ravel()
-            for r in prob.argsort()[::-1]:
+            for r in (- model.predict(self.feature(config), 1).ravel()).argsort():
                 act, arg = self.idx2tran[r]
                 if config.doable(act):
                     getattr(config, act)(arg)
