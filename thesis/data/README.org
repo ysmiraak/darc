@@ -1,27 +1,34 @@
 * t for trial
 
-|  t | method               | form    | lemma   | unit-norm | dropout |
-|----+----------------------+---------+---------+-----------+---------|
-|  0 | none                 |         |         |           |         |
-|  1 | atomic               |         |         |           |         |
-|  2 | binary               |         |         |           |         |
-|  3 | l1-normalized binary |         |         |           |         |
-|  4 | l2-normalized binary |         |         |           |         |
-|  5 | one-hot              |         |         |           |         |
-|  6 | summed               |         |         |           |         |
-|  7 | averaged             |         |         |           |         |
-|  8 | l1-normalized summed |         |         |           |         |
-|  9 | l2-normalized summed |         |         |           |         |
-| 10 | binary               | \bullet |         |           |         |
-| 11 | l2-normalized summed | \bullet |         |           |         |
-| 12 | binary               | \bullet | \bullet |           |         |
-| 13 | l2-normalized summed | \bullet | \bullet |           |         |
-| 14 | binary               | \bullet |         |           |         |
-| 15 | l2-normalized summed | \bullet |         | \bullet   |         |
-| 16 | binary               | \bullet | \bullet | \bullet   |         |
-| 17 | l2-normalized summed | \bullet | \bullet | \bullet   |         |
-| 18 | binary               | \bullet |         | \bullet   | \bullet |
-| 19 | l2-normalized summed | \bullet |         | \bullet   | \bullet |
-| 20 | binary               | \bullet | \bullet | \bullet   | \bullet |
-| 21 | l2-normalized summed | \bullet | \bullet | \bullet   | \bullet |
-| 22 | none                 | \bullet | \bullet | \bullet   | \bullet |
+|  t | method    | form    | lemma   | unit-norm | dropout |
+|----+-----------+---------+---------+-----------+---------|
+| 00 | none      |         |         |           |         |
+| 01 | atomic    |         |         |           |         |
+| 02 | binary    |         |         |           |         |
+| 03 | binary/l1 |         |         |           |         |
+| 04 | binary/l2 |         |         |           |         |
+| 05 | one-hot   |         |         |           |         |
+| 06 | summed    |         |         |           |         |
+| 07 | averaged  |         |         |           |         |
+| 08 | summed/l1 |         |         |           |         |
+| 09 | summed/l2 |         |         |           |         |
+| 10 | maxout    |         |         |           |         |
+| 11 | binary    | \bullet |         |           |         |
+| 12 | summed/l2 | \bullet |         |           |         |
+| 13 | maxout    | \bullet |         |           |         |
+| 14 | binary    | \bullet | \bullet |           |         |
+| 15 | summed/l2 | \bullet | \bullet |           |         |
+| 16 | maxout    | \bullet | \bullet |           |         |
+| 17 | binary    | \bullet |         |           |         |
+| 18 | summed/l2 | \bullet |         | \bullet   |         |
+| 19 | maxout    | \bullet |         | \bullet   |         |
+| 20 | binary    | \bullet | \bullet | \bullet   |         |
+| 21 | summed/l2 | \bullet | \bullet | \bullet   |         |
+| 22 | maxout    | \bullet | \bullet | \bullet   |         |
+| 23 | binary    | \bullet |         | \bullet   | \bullet |
+| 24 | summed/l2 | \bullet |         | \bullet   | \bullet |
+| 25 | maxout    | \bullet |         | \bullet   | \bullet |
+| 26 | binary    | \bullet | \bullet | \bullet   | \bullet |
+| 27 | summed/l2 | \bullet | \bullet | \bullet   | \bullet |
+| 28 | maxout    | \bullet | \bullet | \bullet   | \bullet |
+| 29 | none      | \bullet | \bullet | \bullet   | \bullet |
