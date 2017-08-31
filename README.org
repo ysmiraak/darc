@@ -1,10 +1,11 @@
 my bachelor thesis project.
-[[http://universaldependencies.org/conll17/][an earlier version]] was used in [[http://universaldependencies.org/conll17/][the conll 2017 shared task]].
+
+[[https://github.com/CoNLL-UD-2017/darc][an earlier version]] was used in [[http://universaldependencies.org/conll17/][the conll 2017 shared task]].
 
 * deps
 
 - python3
 - numpy
-- Keras
+- keras
 - tensorflow
 - gensim
