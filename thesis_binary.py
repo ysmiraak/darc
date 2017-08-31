@@ -3,9 +3,8 @@ from src_conllu import Sent
 from src_transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
-from keras import backend as K
 from keras.models import Model, model_from_json
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense, Lambda
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.initializers import uniform
 from keras.constraints import max_norm
 
@@ -68,7 +67,6 @@ class Setup(object):
                         feat2idx[feat] = len(feat2idx)
                 if drel not in drel2idx:
                     drel2idx[drel] = len(drel2idx)
-        feat2idx[Sent.dumb] = len(feat2idx)  # free idx 0 for mask
         idx2tran = [('shift', None)]
         if not proj: idx2tran.append(('swap', None))
         # x y
@@ -124,7 +122,7 @@ class Setup(object):
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
-              feat_embed_dim=32,
+              use_morphology=True,
               hidden_units=256,
               hidden_layers=2,
               activation='relu',
@@ -142,8 +140,6 @@ class Setup(object):
         assert 0 <= upos_embed_dim
         drel_embed_dim = int(drel_embed_dim)
         assert 0 <= drel_embed_dim
-        feat_embed_dim = int(feat_embed_dim)
-        assert 0 <= feat_embed_dim
         hidden_units = int(hidden_units)
         assert 0 < hidden_units or 0 == hidden_layers
         hidden_layers = int(hidden_layers)
@@ -174,7 +170,7 @@ class Setup(object):
         lemm = Input(name="lemm", shape=self.x["lemm"].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x["upos"].shape[1:], dtype=np.uint8)
         drel = Input(name="drel", shape=self.x["drel"].shape[1:], dtype=np.uint8)
-        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.uint8)
+        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.float32)
         # cons layers
         i = [upos, drel]
         upos = Flatten(name="upos_flat")(
@@ -212,22 +208,12 @@ class Setup(object):
                     embeddings_constraint=embed_const,
                     name="lemm_embed")(lemm))
             o.append(lemm)
-        if feat_embed_dim:
-            i.append(feat)
-            feat = Embedding(
-                input_dim=1 + len(self.feat2idx),
-                output_dim=feat_embed_dim,
-                embeddings_initializer=embed_init,
-                mask_zero=True,
-                name="feat_embed")(feat)
-            feat = Lambda(
-                lambda x: K.max(K.reshape(x, (-1, 18, len(self.feat2idx), feat_embed_dim)), -2),
-                name="feat_maxout")(feat)
-            feat = Flatten(name="feat_flat")(feat)
-            o.append(feat)
         if embed_dropout:
             o = [Dropout(name="{}_dropout".format(x.name.split("_")[0]), rate=embed_dropout)(x)
                  for x in o]
+        if use_morphology:
+            i.append(feat)
+            o.append(feat)
         o = Concatenate(name="concat")(o)
         for hid in range(hidden_layers):
             o = Dense(
@@ -356,9 +342,9 @@ class Setup(object):
             lemm[r] = lemm2idx(root)
             upos[r] = upos2idx(root)
             feats[r] = root
-        # feats entry indices
+        # binary destructuring
         feat2idx = self.feat2idx
-        feat = np.zeros((len(feats), len(feat2idx)), np.uint8)
+        feat = np.zeros((len(feats), len(feat2idx)), np.float32)
         for ftv, fts in zip(feat, feats):
             for ft in fts.split("|"):
                 try:
@@ -366,7 +352,9 @@ class Setup(object):
                 except KeyError:
                     pass
                 else:
-                    ftv[idx - 1] = idx
+                    ftv[idx] = 1.0
+            # ftv /= max(ftv.sum(), 1e-12)          # l1-normalized
+            # ftv /= max((ftv @ ftv) ** 0.5, 1e-12)  # l2-normalized
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
         if named:
             return {'form': form, 'lemm': lemm, 'upos': upos, 'drel': drel, 'feat': feat}
@@ -394,15 +382,3 @@ class Setup(object):
             return Setup(**bean), model
         else:
             return  Setup(**bean)
-
-
-# lang, proj = 'kk', False
-# import src_ud2 as ud2
-# setup = Setup.make(
-#     ud2.path(lang, 'train'), proj=proj,
-#     form_w2v="./lab/pretrain_w2v/{}-form.w2v".format(lang),
-#     lemm_w2v="./lab/pretrain_w2v/{}-lemm.w2v".format(lang),
-#     binary=True)
-# from keras.utils import plot_model
-# model = setup.model()
-# plot_model(model, to_file="./lab/model.png")

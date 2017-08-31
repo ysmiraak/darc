@@ -1,11 +1,11 @@
 import src_conllu as conllu
 from src_conllu import Sent
 from src_transition import Config, Oracle
+from collections import Counter
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
-from keras import backend as K
 from keras.models import Model, model_from_json
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense, Lambda
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.initializers import uniform
 from keras.constraints import max_norm
 
@@ -54,7 +54,7 @@ class Setup(object):
             lemm2idx[lemm] = len(lemm2idx)
         # upos2idx feat2idx drel2idx idx2tran
         upos2idx = {Sent.dumb: 0, Sent.root: 1, 'X': 2}
-        feat2idx = {Sent.dumb: 0, Sent.root: 1}
+        feat2cnt = Counter()
         drel2idx = {Sent.dumb: 0}
         if not hasattr(sents, '__len__'): sents = list(sents)
         for sent in sents:
@@ -63,12 +63,14 @@ class Setup(object):
             for upos, feats, drel in it:
                 if upos not in upos2idx:
                     upos2idx[upos] = len(upos2idx)
-                for feat in feats.split("|"):
-                    if feat not in feat2idx:
-                        feat2idx[feat] = len(feat2idx)
+                feat2cnt[feats] += 1
                 if drel not in drel2idx:
                     drel2idx[drel] = len(drel2idx)
-        feat2idx[Sent.dumb] = len(feat2idx)  # free idx 0 for mask
+        feat2idx = {Sent.dumb: 0, Sent.root: 1, Sent.obsc: 2}
+        for feat, cnt in feat2cnt.items():
+            if 1 < cnt and feat not in feat2idx:
+                feat2idx[feat] = len(feat2idx)
+        del feat2cnt
         idx2tran = [('shift', None)]
         if not proj: idx2tran.append(('swap', None))
         # x y
@@ -174,7 +176,7 @@ class Setup(object):
         lemm = Input(name="lemm", shape=self.x["lemm"].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x["upos"].shape[1:], dtype=np.uint8)
         drel = Input(name="drel", shape=self.x["drel"].shape[1:], dtype=np.uint8)
-        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.uint8)
+        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.uint16)
         # cons layers
         i = [upos, drel]
         upos = Flatten(name="upos_flat")(
@@ -214,16 +216,13 @@ class Setup(object):
             o.append(lemm)
         if feat_embed_dim:
             i.append(feat)
-            feat = Embedding(
-                input_dim=1 + len(self.feat2idx),
-                output_dim=feat_embed_dim,
-                embeddings_initializer=embed_init,
-                mask_zero=True,
-                name="feat_embed")(feat)
-            feat = Lambda(
-                lambda x: K.max(K.reshape(x, (-1, 18, len(self.feat2idx), feat_embed_dim)), -2),
-                name="feat_maxout")(feat)
-            feat = Flatten(name="feat_flat")(feat)
+            feat = Flatten(name="feat_flat")(
+                Embedding(
+                    input_dim=len(self.feat2idx),
+                    output_dim=feat_embed_dim,
+                    embeddings_initializer=embed_init,
+                    embeddings_constraint=embed_const,
+                    name="feat_embed")(feat))
             o.append(feat)
         if embed_dropout:
             o = [Dropout(name="{}_dropout".format(x.name.split("_")[0]), rate=embed_dropout)(x)
@@ -272,11 +271,9 @@ class Setup(object):
     def feature(self, config, named=True):
         """-> [numpy.ndarray] :as form, lemm, upos, drel, feat
 
-        assert form.shape == lemm.shape == upos.shape == (18, )
+        assert form.shape == lemm.shape == upos.shape == feat.shape == (18, )
 
         assert drel.shape == (12, )
-
-        assert feat.shape == (18 * len(self.feat2idx), )
 
         """
         # 18 features (Chen & Manning 2014)
@@ -345,9 +342,11 @@ class Setup(object):
         drel2idx = self.drel2idx
         drel = config.deprel
         drel = np.fromiter((drel2idx[drel[i]] for i in x[3:-3]), np.uint8)
-        # feats
-        feats = config.sent.feats
-        feats = [feats[i] for i in x]
+        # feat
+        feat2idx = self.feat2idx.get
+        feat_unk = feat2idx(Sent.obsc)
+        feat = config.sent.feats
+        feat = np.fromiter((feat2idx(feat[i], feat_unk) for i in x), np.uint16)
         # special treatments for root
         if 3 >= len_s:
             r = len_s - 1
@@ -355,18 +354,7 @@ class Setup(object):
             form[r] = form2idx(root)
             lemm[r] = lemm2idx(root)
             upos[r] = upos2idx(root)
-            feats[r] = root
-        # feats entry indices
-        feat2idx = self.feat2idx
-        feat = np.zeros((len(feats), len(feat2idx)), np.uint8)
-        for ftv, fts in zip(feat, feats):
-            for ft in fts.split("|"):
-                try:
-                    idx = feat2idx[ft]
-                except KeyError:
-                    pass
-                else:
-                    ftv[idx - 1] = idx
+            feat[r] = feat2idx(root)
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
         if named:
             return {'form': form, 'lemm': lemm, 'upos': upos, 'drel': drel, 'feat': feat}
@@ -394,15 +382,3 @@ class Setup(object):
             return Setup(**bean), model
         else:
             return  Setup(**bean)
-
-
-# lang, proj = 'kk', False
-# import src_ud2 as ud2
-# setup = Setup.make(
-#     ud2.path(lang, 'train'), proj=proj,
-#     form_w2v="./lab/pretrain_w2v/{}-form.w2v".format(lang),
-#     lemm_w2v="./lab/pretrain_w2v/{}-lemm.w2v".format(lang),
-#     binary=True)
-# from keras.utils import plot_model
-# model = setup.model()
-# plot_model(model, to_file="./lab/model.png")

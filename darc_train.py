@@ -11,7 +11,7 @@ def parse_args():
     parser.add_argument('--proj', action='store_true', help="train a projective parser")
     parser.add_argument('--upos-embed-dim', type=int, default=12, help="default: 12")
     parser.add_argument('--drel-embed-dim', type=int, default=16, help="default: 16")
-    parser.add_argument('--no-morphology', action='store_true')
+    parser.add_argument('--feat-embed-dim', type=int, default=32, help="default: 32")
     parser.add_argument('--hidden-layers', type=int, default=2, help="default: 2")
     parser.add_argument('--hidden-units', type=int, default=256, help="default: 256")
     parser.add_argument('--activation', default='relu', help="default: relu")
@@ -71,7 +71,7 @@ if '__main__' == __name__:
     model = setup.model(
         upos_embed_dim=args.upos_embed_dim,
         drel_embed_dim=args.drel_embed_dim,
-        use_morphology=not args.no_morphology,
+        feat_embed_dim=args.feat_embed_dim,
         hidden_units=args.hidden_units,
         hidden_layers=args.hidden_layers,
         activation=args.activation,

@@ -1,4 +1,4 @@
-* t for trial
+* =t= for trial
 
 |  t | method    | form    | lemma   | unit-norm | dropout |
 |----+-----------+---------+---------+-----------+---------|
@@ -32,3 +32,49 @@
 | 27 | summed/l2 | \bullet | \bullet | \bullet   | \bullet |
 | 28 | maxout    | \bullet | \bullet | \bullet   | \bullet |
 | 29 | none      | \bullet | \bullet | \bullet   | \bullet |
+
+* ranking function
+
+#+BEGIN_SRC clojure
+  (defn rank
+    ([xs] (rank compare xs))
+    ([comp xs]
+     (if-let [xs (seq xs)]
+       (loop [[[i x] & ix] (->> xs (map-indexed vector) (sort-by peek comp))
+              y x o 0 r o res (-> xs count (repeat 0) vec transient)]
+         (let [r (if (= x y) r o)
+               res (assoc! res i r)]
+           (if ix
+             (recur ix x (inc o) r res)
+             (persistent! res))))
+       [])))
+#+END_SRC
+
+* plotting
+
+#+BEGIN_SRC R
+  pdf(file = "plots.pdf", width = 8, height = 8, family = "mono")
+
+  matplot(1:25
+        , read.csv("las_t00-t10.csv")     # line 2--166 in "las.csv" transposed
+          [,-c(91:105)]                   # removes t06
+        , type = "l"
+        , col = 1:15
+        , lty = 1:11
+        , xlab = "Epoch"
+        , ylab = "LAS")
+
+  boxplot(read.csv("las_rank_t00-t10.csv")
+        , xlab = "Method"
+        , ylab = "Ranking"
+        , ylim = c(33, 1)
+        , names = 0:10)
+
+  boxplot(read.csv("las_rank_t11-t29.csv")
+        , xlab = "Trial"
+        , ylab = "Ranking"
+        , ylim = c(57, 1)
+        , names = 1:19)
+
+  dev.off()
+#+END_SRC

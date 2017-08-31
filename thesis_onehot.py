@@ -3,9 +3,8 @@ from src_conllu import Sent
 from src_transition import Config, Oracle
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
-from keras import backend as K
 from keras.models import Model, model_from_json
-from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense, Lambda
+from keras.layers import Input, Embedding, Flatten, Concatenate, Dropout, Dense
 from keras.initializers import uniform
 from keras.constraints import max_norm
 
@@ -54,7 +53,7 @@ class Setup(object):
             lemm2idx[lemm] = len(lemm2idx)
         # upos2idx feat2idx drel2idx idx2tran
         upos2idx = {Sent.dumb: 0, Sent.root: 1, 'X': 2}
-        feat2idx = {Sent.dumb: 0, Sent.root: 1}
+        feat_set = {Sent.dumb, Sent.root}
         drel2idx = {Sent.dumb: 0}
         if not hasattr(sents, '__len__'): sents = list(sents)
         for sent in sents:
@@ -63,12 +62,21 @@ class Setup(object):
             for upos, feats, drel in it:
                 if upos not in upos2idx:
                     upos2idx[upos] = len(upos2idx)
-                for feat in feats.split("|"):
-                    if feat not in feat2idx:
-                        feat2idx[feat] = len(feat2idx)
+                feat_set.update(feats.split("|"))
                 if drel not in drel2idx:
                     drel2idx[drel] = len(drel2idx)
-        feat2idx[Sent.dumb] = len(feat2idx)  # free idx 0 for mask
+        feat2idx = {}
+        for feat in feat_set:
+            feat = feat.split("=")
+            attr, val = ("", *feat) if 1 == len(feat) else feat
+            val2idx = feat2idx.setdefault(attr, {})
+            val2idx[val] = len(val2idx)
+        idx = 0
+        for val2idx in feat2idx.values():
+            if "_" not in val2idx: val2idx["_"] = len(val2idx)
+            for val in val2idx: val2idx[val] += idx
+            idx += len(val2idx)
+        del feat_set
         idx2tran = [('shift', None)]
         if not proj: idx2tran.append(('swap', None))
         # x y
@@ -124,7 +132,7 @@ class Setup(object):
     def model(self,
               upos_embed_dim=12,
               drel_embed_dim=16,
-              feat_embed_dim=32,
+              use_morphology=True,
               hidden_units=256,
               hidden_layers=2,
               activation='relu',
@@ -142,8 +150,6 @@ class Setup(object):
         assert 0 <= upos_embed_dim
         drel_embed_dim = int(drel_embed_dim)
         assert 0 <= drel_embed_dim
-        feat_embed_dim = int(feat_embed_dim)
-        assert 0 <= feat_embed_dim
         hidden_units = int(hidden_units)
         assert 0 < hidden_units or 0 == hidden_layers
         hidden_layers = int(hidden_layers)
@@ -174,7 +180,7 @@ class Setup(object):
         lemm = Input(name="lemm", shape=self.x["lemm"].shape[1:], dtype=np.uint16)
         upos = Input(name="upos", shape=self.x["upos"].shape[1:], dtype=np.uint8)
         drel = Input(name="drel", shape=self.x["drel"].shape[1:], dtype=np.uint8)
-        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.uint8)
+        feat = Input(name="feat", shape=self.x["feat"].shape[1:], dtype=np.float32)
         # cons layers
         i = [upos, drel]
         upos = Flatten(name="upos_flat")(
@@ -212,25 +218,12 @@ class Setup(object):
                     embeddings_constraint=embed_const,
                     name="lemm_embed")(lemm))
             o.append(lemm)
-        if feat_embed_dim:
-            i.append(feat)
-            feat = Embedding(
-                input_dim=1 + len(self.feat2idx),
-                output_dim=feat_embed_dim,
-                embeddings_initializer=embed_init,
-                mask_zero=True,
-                name="feat_embed")(feat)
-            def normalized_sum(x):
-                x = K.reshape(x, (-1, 18, len(self.feat2idx), feat_embed_dim))
-                x = K.sum(x, -2)
-                x = K.l2_normalize(x, -1)
-                return x
-            feat = Lambda(normalized_sum, name="feat_aggr")(feat)
-            feat = Flatten(name="feat_flat")(feat)
-            o.append(feat)
         if embed_dropout:
             o = [Dropout(name="{}_dropout".format(x.name.split("_")[0]), rate=embed_dropout)(x)
                  for x in o]
+        if use_morphology:
+            i.append(feat)
+            o.append(feat)
         o = Concatenate(name="concat")(o)
         for hid in range(hidden_layers):
             o = Dense(
@@ -273,13 +266,13 @@ class Setup(object):
         return config.finish()
 
     def feature(self, config, named=True):
-        """-> [numpy.ndarray] :as form, upos, drel, feat
+        """-> [numpy.ndarray] :as form, lemm, upos, drel, feat
 
-        assert form.shape == upos.shape == (18, )
+        assert form.shape == lemm.shape == upos.shape == (18, )
 
-        assert drel.shape == (16, )
+        assert drel.shape == (12, )
 
-        assert feat.shape == (18 * len(self.feat2idx), )
+        assert feat.shape == (18 * sum(map(len, feat2idx.values())), )
 
         """
         # 18 features (Chen & Manning 2014)
@@ -359,17 +352,22 @@ class Setup(object):
             lemm[r] = lemm2idx(root)
             upos[r] = upos2idx(root)
             feats[r] = root
-        # feats embedding
+        # concatenated one-hot
         feat2idx = self.feat2idx
-        feat = np.zeros((len(feats), len(feat2idx)), np.uint8)
+        feat = np.zeros((len(feats), sum(map(len, feat2idx.values()))), np.float32)
         for ftv, fts in zip(feat, feats):
+            attr2val = {}
             for ft in fts.split("|"):
+                ft = ft.split("=")
+                attr, val = ("", *ft) if 1 == len(ft) else ft
+                attr2val[attr] = val
+            for attr, val2idx in feat2idx.items():
                 try:
-                    idx = feat2idx[ft]
+                    idx = val2idx[attr2val[attr]]
                 except KeyError:
-                    pass
-                else:
-                    ftv[idx - 1] = idx
+                    idx = val2idx["_"]
+                finally:
+                    ftv[idx] = 1.0
         form.shape = lemm.shape = upos.shape = drel.shape = feat.shape = 1, -1
         if named:
             return {'form': form, 'lemm': lemm, 'upos': upos, 'drel': drel, 'feat': feat}
@@ -397,34 +395,3 @@ class Setup(object):
             return Setup(**bean), model
         else:
             return  Setup(**bean)
-
-
-if '__main__' == __name__:
-
-    trial = 12
-    use_lemma = False
-    embed_const = None
-    embed_dropout = 0
-
-    train_path = "./lab/train/"
-    embed_path = "./lab/embed/"
-    parse_path = "./lab/parse/"
-
-    from lab import langs
-
-    def train_parse(lang):
-        setup = Setup.make(
-            "{}{}-ud-train.conllu".format(train_path, lang)
-            , form_w2v="{}{}-form{}.w2v".format(embed_path, lang, 32 if use_lemma else 64)
-            , lemm_w2v="{}{}-lemm32.w2v".format(embed_path, lang) if use_lemma else None
-            , binary=True
-            , proj=False)
-        model = setup.model(embed_const=embed_const, embed_dropout=embed_dropout)
-        sents = list(conllu.load("{}{}-ud-dev.conllu".format(train_path, lang)))
-        for epoch in range(25):
-            setup.train(model, verbose=2)
-            conllu.save((setup.parse(model, sent) for sent in sents)
-                        , "{}{}-t{}-e{:02d}.conllu".format(parse_path, lang, trial, epoch))
-
-    for lang in langs:
-        train_parse(lang)
